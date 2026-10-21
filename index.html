@@ -344,7 +344,11 @@ async function loadSurveyResolution(jobId,target){
   if(surveyContextJob!==jobId||!document.getElementById("surveyModal").classList.contains("show"))return;
   renderResolutionDetails(target,details);
   renderSurveyContacts(jobId,details);
- }catch(e){if(surveyContextJob===jobId){target.textContent="ไม่สามารถโหลดผลการแก้ไข: "+e.message;}}
+ }catch(e){if(surveyContextJob===jobId){
+  target.textContent="ยังไม่มีประวัติผลการแก้ไข JOB นี้บน Cloud (ต้องซิงก์ข้อมูลจาก SMS เพิ่มเติม)";
+  renderSurveyContacts(jobId,[]);
+  console.warn("Resolution not synced for JOB",jobId,e.message);
+ }}
 }
 
 // V4: 3CX TEL routing copied from the working AMS dashboard.
@@ -445,7 +449,7 @@ function openSurvey(btn){
  document.getElementById("mEmp").textContent=c[8].textContent;
  document.getElementById("mProblem").textContent=c[9].textContent.trim()||"ไม่ระบุรายละเอียดปัญหา";
  const resolutionEl=document.getElementById("mResolution");
- resolutionEl.textContent="กำลังโหลดผลการแก้ไขจาก SMS...";
+ resolutionEl.textContent=window.__cssCloudMode?"กำลังตรวจสอบประวัติผลการแก้ไขบน Cloud...":"กำลังโหลดผลการแก้ไขจาก SMS...";
  const selectedJob=c[1].textContent.trim();
  surveyContextJob=selectedJob;
  renderSurveyContacts(selectedJob,[]);
