@@ -97,7 +97,7 @@ footer{font-size:11px;color:#6b7f99;display:flex;justify-content:space-between;m
 /* Cloud parity pilot: original V6.5 interface, authenticated read-only local SMS bridge. */
 (function(){
  const supa=window.supabase.createClient('https://ydlrbhvbxnryqtuzgxfc.supabase.co','sb_publishable_Q-l45YS9DmbAvaCNV6Npxw_JAfeL0nb');
- const realFetch=window.fetch.bind(window);
+ const realFetch=window.fetch.bind(window);\n window.__cssCloudMode=true;
  let ready=false;
  const respond=(obj,status=200)=>new Response(JSON.stringify(obj),{status,headers:{'Content-Type':'application/json'}});
  const authSession=async()=>{const {data,error}=await supa.auth.getSession();if(error||!data.session?.access_token)throw Error('Session expired');return data.session;};
@@ -149,8 +149,17 @@ footer{font-size:11px;color:#6b7f99;display:flex;justify-content:space-between;m
      const {data,error}=await supa.from('surveys').select('id,saved_at,job_id,team,status,average,comment,evaluator,callback,answers_json').order('id',{ascending:true}).limit(1000);
      return new Response(JSON.stringify(error?{ok:false,error:error.message}:{ok:true,surveys:(data||[]).map(x=>({...x,answers:x.answers_json||[]}))}),{status:error?502:200,headers:{'Content-Type':'application/json'}});
    }
-   if(path.pathname==='/api/resolution'){return respond({ok:false,error:'Resolution endpoint requires secure bridge mapping; not enabled'},501)}
-   if(path.pathname==='/api/status'){return respond({ok:true,token:'CSS-CLOUD',pid:'cloud',source:'Supabase + local Bridge'})}
+   if(path.pathname==='/api/resolution'){
+     const jobId=path.searchParams.get('job_id');
+     if(!jobId)return respond({ok:false,error:'Missing JOB ID'},400);
+     const {data,error}=await supa.from('css_jobs').select('job_data').eq('job_id',jobId).maybeSingle();
+     if(error)return respond({ok:false,error:error.message},502);
+     if(!data)return respond({ok:false,error:'JOB not found'},404);
+     const details=Array.isArray(data.job_data?.ResolutionDetails)?data.job_data.ResolutionDetails:[];
+     if(details.length)return respond({ok:true,complete:true,source:'supabase',details});
+     return respond({ok:false,error:'ยังไม่มีประวัติผลการแก้ไขของ JOB นี้บน Cloud — ต้องนำเข้าจาก SMS ก่อน',complete:false},424);
+   }
+   if(path.pathname==='/api/status'){return respond({ok:true,token:'CSS-CLOUD',pid:'cloud',source:'Supabase',note:'SMS live bridge unavailable in cloud'})}
    if(path.pathname==='/api/questions'){
      const {data,error}=await supa.from('survey_questions').select('team,questions_json');
      return new Response(JSON.stringify(error?{ok:false,error:error.message}:{ok:true,questions:Object.fromEntries((data||[]).map(x=>[x.team,x.questions_json]))}),{status:error?502:200,headers:{'Content-Type':'application/json'}});
@@ -689,7 +698,7 @@ async function loadJobsFromBridge(){
    smsJobs=data.jobs;
    fillJobSelect("fVan",smsJobs.map(vanName));fillJobSelect("fGroup",smsJobs.map(groupName));fillJobSelect("fWork",smsJobs.map(workName));fillJobSelect("fStation",smsJobs.map(j=>val(j,"STA_ID")));
    applyJobFilters();
-   b.textContent=data.source==="sms_live"?"SMS LIVE":"LOCAL BRIDGE";b.style.background=data.source==="sms_live"?"#159b62":"#e88728";
+   b.textContent=data.source==="supabase"?"CLOUD LIVE":data.source==="sms_live"?"SMS LIVE":"LOCAL BRIDGE";b.style.background=data.source==="supabase"||data.source==="sms_live"?"#159b62":"#e88728";
  }catch(e){b.textContent="LOAD FAILED";b.style.background="#d84b4b";alert("ไม่สามารถโหลด JOB: "+e.message+"\nข้อมูลเดิมที่โหลดสำเร็จยังคงแสดงอยู่");}
 }
 function exportJobsCSV(){
@@ -705,12 +714,26 @@ window.addEventListener("DOMContentLoaded",()=>{
 });
 
 
-async function checkSystem(){
+// Cloud mode retains the original diagnostic layout without attempting inaccessible localhost SMS services.
+async function checkCloudSystem(){
+ const out=document.getElementById("diagOut");out.textContent="Checking Supabase Cloud...\\n";
+ const set=(id,value,detail)=>{const el=document.getElementById(id);if(el)el.textContent=value;const d=document.getElementById(id+"D");if(d&&detail)d.textContent=detail};
+ try{
+   const [status,surveys]=await Promise.all([fetch("/api/status"),fetch("/api/surveys")]);
+   const st=await status.json(),sv=await surveys.json();
+   set("stBridge",st.ok?"ONLINE":"ERROR","Supabase Cloud");
+   set("stDB",sv.ok?"ONLINE":"ERROR",sv.ok?sv.surveys.length+" records":sv.error);
+   set("stSMS","NOT CONNECTED","SMS live data requires a hosted secure integration");
+   set("stJobs",smsJobs.length+" JOB","Cloud records in selected date range");
+   out.textContent="Cloud: "+JSON.stringify(st,null,2)+"\\nSurvey DB: "+(sv.ok?sv.surveys.length+" records":sv.error)+"\\nSMS live: not connected; showing imported JOB data only";
+ }catch(e){out.textContent="Cloud diagnostic error: "+e.message;set("stBridge","ERROR",e.message)}
+}
+async function checkSystem(){\n if(window.__cssCloudMode)return checkCloudSystem();
  const out=document.getElementById("diagOut"); out.textContent="Checking...\n";
  const set=(id,val,detail)=>{document.getElementById(id).textContent=val;if(detail)document.getElementById(id+"D").textContent=detail};
  try{
    const r=await fetch("/api/status",{cache:"no-store"}), j=await r.json();
-   if(j.ok && j.token==="CSS-FINAL-18765") set("stBridge","ONLINE","FINAL • PID "+j.pid);
+   if(j.ok && (j.token==="CSS-FINAL-18765"||j.token==="CSS-CLOUD")) set("stBridge","ONLINE",j.token==="CSS-CLOUD"?"Supabase Cloud":"FINAL • PID "+j.pid);
    else set("stBridge","WRONG SERVICE",JSON.stringify(j));
    out.textContent+="[Bridge] "+JSON.stringify(j,null,2)+"\n\n";
  }catch(e){set("stBridge","OFFLINE",e.message);out.textContent+="[Bridge ERROR] "+e.message+"\n\n"}
