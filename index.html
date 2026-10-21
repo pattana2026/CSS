@@ -517,7 +517,7 @@ async function loadSurveyRecords(){
  if(!response.ok)throw new Error("โหลดผลประเมิน HTTP "+response.status);
  const result=await response.json();
  if(!result.ok||!Array.isArray(result.surveys))throw new Error("ข้อมูลผลประเมินไม่ถูกต้อง");
- serverSurveyRecords=result.surveys.slice();
+ serverSurveyRecords=result.surveys.slice().reverse();
  renderQueue();
  const report=document.getElementById("view-report");
  if(report&&report.style.display!=="none")renderReport();
@@ -715,7 +715,7 @@ window.addEventListener("DOMContentLoaded",()=>{
 
 
 // Cloud mode retains the original diagnostic layout without attempting inaccessible localhost SMS services.
-async function checkCloudSystem(){
+async async function checkCloudSystem(){
  const out=document.getElementById("diagOut");out.textContent="Checking Supabase Cloud...\\n";
  const set=(id,value,detail)=>{const el=document.getElementById(id);if(el)el.textContent=value;const d=document.getElementById(id+"D");if(d&&detail)d.textContent=detail};
  try{
@@ -728,7 +728,8 @@ async function checkCloudSystem(){
    out.textContent="Cloud: "+JSON.stringify(st,null,2)+"\\nSurvey DB: "+(sv.ok?sv.surveys.length+" records":sv.error)+"\\nSMS live: not connected; showing imported JOB data only";
  }catch(e){out.textContent="Cloud diagnostic error: "+e.message;set("stBridge","ERROR",e.message)}
 }
-async function checkSystem(){\n if(window.__cssCloudMode)return checkCloudSystem();
+async function checkSystem(){
+ if(window.__cssCloudMode)return checkCloudSystem();
  const out=document.getElementById("diagOut"); out.textContent="Checking...\n";
  const set=(id,val,detail)=>{document.getElementById(id).textContent=val;if(detail)document.getElementById(id+"D").textContent=detail};
  try{
