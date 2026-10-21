@@ -54,4 +54,4 @@ $("logout").addEventListener("click",async()=>{await CSSCloud.signOut();$("ident
 $("refresh").addEventListener("click",reload);$("search").addEventListener("input",renderJobs);
 $("surveyForm").addEventListener("submit",async e=>{e.preventDefault();$("saveBtn").disabled=true;try{const record={job_id:$("jobId").value.trim(),team:$("team").value,status:$("status").value,average:$("average").value===""?null:Number($("average").value),evaluator:$("evaluator").value,callback:$("callback").value||null,comment:$("comment").value,answers:[]};if(!record.job_id)throw Error("ต้องระบุ JOB ID");if(record.average!==null&&(record.average<0||record.average>5))throw Error("คะแนนต้องอยู่ระหว่าง 0–5");await CSSCloud.saveSurvey(record);$("surveyForm").reset();await reload();show("บันทึกผลประเมินสำเร็จ")}catch(err){show("บันทึกไม่สำเร็จ: "+err.message,true)}finally{$("saveBtn").disabled=false}});
 enter().catch(e=>show("ไม่สามารถตรวจสอบสิทธิ์: "+e.message,true));
-</script><script src="./css-contact-bridge.js"></script></body></html>
+</script><script src="./css-contact-bridge-v2.js"></script></body></html>
