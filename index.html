@@ -131,17 +131,19 @@ footer{font-size:11px;color:#6b7f99;display:flex;justify-content:space-between;m
    if(method!=='GET')return respond({ok:false,error:'Unsupported operation'},405);
    if(path.pathname==='/api/jobs'){
      const from=path.searchParams.get('from'),to=path.searchParams.get('to');
-     const session=await authSession();
-     const {data:cloudJobs,error:cloudError}=await supa.from('css_jobs').select('job_data').limit(1000);
-     if(cloudError)return respond({ok:false,error:cloudError.message},502);
-     if(cloudJobs?.length){
-       const jobs=cloudJobs.map(x=>x.job_data).filter(Boolean).filter(j=>{const date=String(j.CloseDate||'').slice(0,10);return (!from||date>=from)&&(!to||date<=to)});
-       return respond({ok:true,complete:true,source:'supabase',jobs});
+     await authSession();
+     const cloudJobs=[];
+     for(let offset=0;offset<100000;offset+=1000){
+       const {data,error}=await supa.from('css_jobs').select('job_data').order('job_id',{ascending:true}).range(offset,offset+999);
+       if(error)return respond({ok:false,error:error.message},502);
+       cloudJobs.push(...(data||[]));
+       if(!data||data.length<1000)break;
      }
-     let r;try{r=await realFetch('http://127.0.0.1:18766/api/jobs-list?'+new URLSearchParams({from,to}),{headers:{Authorization:'Bearer '+session.access_token},cache:'no-store'});}catch(e){return respond({ok:false,error:'Cloud ยังไม่มี JOB และไม่สามารถเชื่อม Local Bridge จากเครื่องนี้ได้ ต้องนำเข้าข้อมูล JOB ก่อน'},503);}
-     if(!r.ok)return r;
-     const d=await r.json();const jobs=(d.jobs||[]).map(j=>({...j,StationSys:j.xStation||'',EMP_ID3:j.EMP_ID3||'',GOP_ID:j.GOP_ID||'',JobFailure_Detail:'',Resolve_Detail:''}));
-     return new Response(JSON.stringify({ok:true,complete:true,source:'bridge_readonly',jobs}),{status:200,headers:{'Content-Type':'application/json'}});
+     const jobs=cloudJobs.map(x=>x.job_data).filter(Boolean).filter(j=>{
+       const date=String(j.CloseDate||'').slice(0,10);
+       return (!from||date>=from)&&(!to||date<=to);
+     });
+     return respond({ok:true,complete:true,source:'supabase',jobs});
    }
    if(path.pathname==='/api/surveys'){
      const {data,error}=await supa.from('surveys').select('id,saved_at,job_id,team,status,average,comment,evaluator,callback,answers_json').order('id',{ascending:true}).limit(1000);
@@ -159,7 +161,6 @@ footer{font-size:11px;color:#6b7f99;display:flex;justify-content:space-between;m
 </script>
 </head>
 <body>
-<div style="padding:8px 20px;background:#fff3cd;color:#6b4b00;font:13px Segoe UI,sans-serif">CSS CLOUD — หน้าตา CSS_FINAL V6.5 | บันทึกผลเฉพาะ JOB ที่ซิงก์เข้า Cloud แล้ว | Resolution ยังไม่รองรับ</div>
 <header>
  <div class="brand">🔧 Customer Satisfaction Survey (CSS)<small>Service Management System - JOB Dashboard</small></div>
  <div class="user"><span>📅 <span id="dashboardNow">23 กันยายน 2026</span></span><span><span id="bridgeState" style="padding:5px 9px;border-radius:12px;background:#e88728;font-size:11px">CONNECTING</span> ◉ Admin⌄</span></div>
