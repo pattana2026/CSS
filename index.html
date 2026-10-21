@@ -132,7 +132,13 @@ footer{font-size:11px;color:#6b7f99;display:flex;justify-content:space-between;m
    if(path.pathname==='/api/jobs'){
      const from=path.searchParams.get('from'),to=path.searchParams.get('to');
      const session=await authSession();
-     const r=await realFetch('http://127.0.0.1:18766/api/jobs-list?'+new URLSearchParams({from,to}),{headers:{Authorization:'Bearer '+session.access_token},cache:'no-store'});
+     const {data:cloudJobs,error:cloudError}=await supa.from('css_jobs').select('job_data').limit(1000);
+     if(cloudError)return respond({ok:false,error:cloudError.message},502);
+     if(cloudJobs?.length){
+       const jobs=cloudJobs.map(x=>x.job_data).filter(Boolean).filter(j=>{const date=String(j.CloseDate||'').slice(0,10);return (!from||date>=from)&&(!to||date<=to)});
+       return respond({ok:true,complete:true,source:'supabase',jobs});
+     }
+     let r;try{r=await realFetch('http://127.0.0.1:18766/api/jobs-list?'+new URLSearchParams({from,to}),{headers:{Authorization:'Bearer '+session.access_token},cache:'no-store'});}catch(e){return respond({ok:false,error:'Cloud ยังไม่มี JOB และไม่สามารถเชื่อม Local Bridge จากเครื่องนี้ได้ ต้องนำเข้าข้อมูล JOB ก่อน'},503);}
      if(!r.ok)return r;
      const d=await r.json();const jobs=(d.jobs||[]).map(j=>({...j,StationSys:j.xStation||'',EMP_ID3:j.EMP_ID3||'',GOP_ID:j.GOP_ID||'',JobFailure_Detail:'',Resolve_Detail:''}));
      return new Response(JSON.stringify({ok:true,complete:true,source:'bridge_readonly',jobs}),{status:200,headers:{'Content-Type':'application/json'}});
