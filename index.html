@@ -146,7 +146,7 @@ footer{font-size:11px;color:#6b7f99;display:flex;justify-content:space-between;m
      return respond({ok:true,complete:true,source:'supabase',jobs});
    }
    if(path.pathname==='/api/surveys'){
-     const {data,error}=await supa.from('surveys').select('id,saved_at,job_id,team,status,average,comment,evaluator,callback,answers_json').order('id',{ascending:true}).limit(1000);
+     const data=[];let error=null;for(let offset=0;offset<100000;offset+=1000){const page=await supa.from('surveys').select('id,saved_at,job_id,team,status,average,comment,evaluator,callback,answers_json').order('id',{ascending:false}).range(offset,offset+999);if(page.error){error=page.error;break;}data.push(...(page.data||[]));if(!page.data||page.data.length<1000)break;}
      return new Response(JSON.stringify(error?{ok:false,error:error.message}:{ok:true,surveys:(data||[]).map(x=>({...x,answers:x.answers_json||[]}))}),{status:error?502:200,headers:{'Content-Type':'application/json'}});
    }
    if(path.pathname==='/api/resolution'){
@@ -162,7 +162,7 @@ footer{font-size:11px;color:#6b7f99;display:flex;justify-content:space-between;m
    if(path.pathname==='/api/status'){return respond({ok:true,token:'CSS-CLOUD',pid:'cloud',source:'Supabase',note:'SMS live bridge unavailable in cloud'})}
    if(path.pathname==='/api/questions'){
      const {data,error}=await supa.from('survey_questions').select('team,questions_json');
-     return new Response(JSON.stringify(error?{ok:false,error:error.message}:{ok:true,questions:Object.fromEntries((data||[]).map(x=>[x.team,x.questions_json]))}),{status:error?502:200,headers:{'Content-Type':'application/json'}});
+     return new Response(JSON.stringify(error?{ok:false,error:error.message}:{ok:true,questions:Object.assign(Object.fromEntries(['ติดตั้ง','Call Center','Service','ทีมอื่น ๆ'].map(t=>[t,['ความพึงพอใจต่อการให้บริการ','ความรวดเร็วในการดำเนินงาน','การสื่อสารและการให้ข้อมูล','คุณภาพของการแก้ไข/บริการ']])),Object.fromEntries((data||[]).map(x=>[x.team,x.questions_json])))}),{status:error?502:200,headers:{'Content-Type':'application/json'}});
    }
    return new Response(JSON.stringify({ok:false,error:'Endpoint not available in Cloud pilot'}),{status:501,headers:{'Content-Type':'application/json'}});
  };
@@ -517,7 +517,7 @@ async function loadSurveyRecords(){
  if(!response.ok)throw new Error("โหลดผลประเมิน HTTP "+response.status);
  const result=await response.json();
  if(!result.ok||!Array.isArray(result.surveys))throw new Error("ข้อมูลผลประเมินไม่ถูกต้อง");
- serverSurveyRecords=result.surveys.slice().reverse();
+ serverSurveyRecords=result.surveys.slice();
  renderQueue();
  const report=document.getElementById("view-report");
  if(report&&report.style.display!=="none")renderReport();
@@ -690,7 +690,7 @@ async function loadJobsFromBridge(){
  try{
    const df=document.getElementById("closeFrom").value,dt=document.getElementById("closeTo").value;
    if(!df||!dt||df>dt)throw new Error("กรุณาระบุช่วงวันที่ปิด JOB ให้ถูกต้อง");
-   b.textContent="LOADING SMS";b.style.background="#e88728";
+   b.textContent=window.__cssCloudMode?"LOADING CLOUD":"LOADING SMS";b.style.background="#e88728";
    const r=await fetch(`/api/jobs?from=${encodeURIComponent(df)}&to=${encodeURIComponent(dt)}`,{cache:"no-store"});
    if(!r.ok)throw new Error("HTTP "+r.status);
    const data=await r.json();
