@@ -79,8 +79,14 @@
     const member = await requireMember();
     const { data: userInfo, error: userError } = await getClient().auth.getUser();
     if (userError || !userInfo.user) throw new Error("Session expired");
+    const jobId = String(record.job_id || "").trim();
+    if (!jobId) throw new Error("ต้องระบุ JOB ID");
+    const { data: existingJob, error: jobError } = await getClient()
+      .from("css_jobs").select("job_id").eq("job_id", jobId).maybeSingle();
+    if (jobError) throw jobError;
+    if (!existingJob) throw new Error("ไม่พบ JOB นี้ใน Cloud กรุณาซิงก์ JOB ก่อนบันทึกผลประเมิน");
     const { data, error } = await getClient().from("surveys").insert({
-      job_id: String(record.job_id || "").trim(),
+      job_id: jobId,
       team: record.team || null,
       status: record.status,
       average: record.average == null ? null : Number(record.average),
