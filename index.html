@@ -99,6 +99,8 @@ footer{font-size:11px;color:#6b7f99;display:flex;justify-content:space-between;m
  const supa=window.supabase.createClient('https://ydlrbhvbxnryqtuzgxfc.supabase.co','sb_publishable_Q-l45YS9DmbAvaCNV6Npxw_JAfeL0nb');
  const realFetch=window.fetch.bind(window);
  let ready=false;
+ const respond=(obj,status=200)=>new Response(JSON.stringify(obj),{status,headers:{'Content-Type':'application/json'}});
+ const authSession=async()=>{const {data,error}=await supa.auth.getSession();if(error||!data.session?.access_token)throw Error('Session expired');return data.session;};
  const overlay=document.createElement('div');overlay.id='cssCloudGate';overlay.style.cssText='position:fixed;z-index:99999;inset:0;background:#f2f6fb;display:flex;align-items:center;justify-content:center;font:15px Segoe UI,sans-serif';
  overlay.innerHTML='<div style="background:white;padding:30px;border-radius:12px;box-shadow:0 6px 30px #0002;width:380px;max-width:95vw"><h2 style="margin:0 0 16px">CSS V6.5 — Cloud Login</h2><p>เข้าสู่ระบบด้วยบัญชี Supabase ที่ได้รับอนุมัติ</p><form id="cloudLogin"><input id="cloudEmail" type="email" placeholder="Email" required style="width:100%;padding:10px;margin-bottom:10px"><input id="cloudPassword" type="password" placeholder="Password" required style="width:100%;padding:10px;margin-bottom:10px"><button style="padding:10px;width:100%;background:#2175d4;color:white;border:0">เข้าสู่ระบบ</button></form><p id="cloudError" role="alert" style="color:#b91c1c"></p></div>';
  document.addEventListener('DOMContentLoaded',()=>{document.body.append(overlay);document.getElementById('cloudLogin').onsubmit=async e=>{e.preventDefault();try{const {error}=await supa.auth.signInWithPassword({email:document.getElementById('cloudEmail').value,password:document.getElementById('cloudPassword').value});if(error)throw error;await check();}catch(x){document.getElementById('cloudError').textContent=x.message}};check().catch(()=>{});});
@@ -108,20 +110,39 @@ footer{font-size:11px;color:#6b7f99;display:flex;justify-content:space-between;m
    if(!raw.startsWith('/api/'))return realFetch(input,options);
    if(!ready)return new Response(JSON.stringify({ok:false,error:'Login required'}),{status:401,headers:{'Content-Type':'application/json'}});
    const path=new URL(raw,location.origin),method=(options?.method||'GET').toUpperCase();
-   if(method!=='GET')return new Response(JSON.stringify({ok:false,error:'Cloud pilot is read-only. Save disabled until Supabase schema mapping is validated.'}),{status:403,headers:{'Content-Type':'application/json'}});
+   if(method==='POST' && path.pathname==='/api/surveys'){
+     try{
+       const record=JSON.parse(options?.body||'{}');const jobId=String(record.job_id||'').trim();if(!jobId)throw Error('Missing JOB ID');
+       const {data:job,error:jobError}=await supa.from('css_jobs').select('job_id').eq('job_id',jobId).maybeSingle();
+       if(jobError)throw jobError;if(!job)throw Error('ยังไม่มี JOB นี้ใน Supabase: ต้องซิงก์ข้อมูล JOB ที่ไม่มีข้อมูลส่วนบุคคลก่อนบันทึก');
+       const {data:{user},error:userError}=await supa.auth.getUser();if(userError||!user)throw Error('Session expired');
+       const {data,error}=await supa.from('surveys').insert({job_id:jobId,team:record.team||null,status:record.status,average:record.average==null?null:Number(record.average),comment:record.comment||null,evaluator:record.evaluator||null,callback:record.callback||null,answers_json:record.answers||[],created_by:user.id}).select('id').single();
+       if(error)throw error;return respond({ok:true,id:data.id});
+     }catch(e){return respond({ok:false,error:e.message},400)}
+   }
+   if(method==='POST' && path.pathname==='/api/questions'){
+     try{const record=JSON.parse(options?.body||'{}');if(!record.team||!Array.isArray(record.questions)||record.questions.length<1||record.questions.length>20)throw Error('Invalid question data');
+       const {data:member,error:memberError}=await supa.from('css_members').select('role,active').eq('user_id',(await supa.auth.getUser()).data.user?.id).maybeSingle();
+       if(memberError||!member?.active||member.role!=='admin')throw Error('Only admin can edit questions');
+       const {error}=await supa.from('survey_questions').upsert({team:record.team,questions_json:record.questions},{onConflict:'team'});if(error)throw error;
+       return respond({ok:true});
+     }catch(e){return respond({ok:false,error:e.message},403)}
+   }
+   if(method!=='GET')return respond({ok:false,error:'Unsupported operation'},405);
    if(path.pathname==='/api/jobs'){
      const from=path.searchParams.get('from'),to=path.searchParams.get('to');
-     const {data:{session}}=await supa.auth.getSession();
-     if(!session?.access_token)return new Response(JSON.stringify({ok:false,error:'Session expired'}),{status:401,headers:{'Content-Type':'application/json'}});
+     const session=await authSession();
      const r=await realFetch('http://127.0.0.1:18766/api/jobs-list?'+new URLSearchParams({from,to}),{headers:{Authorization:'Bearer '+session.access_token},cache:'no-store'});
      if(!r.ok)return r;
-     const d=await r.json();const jobs=(d.jobs||[]).map(j=>({...j,StationSys:j.xStation||'',EMP_ID3:'',GOP_ID:'',JobFailure_Detail:'',Resolve_Detail:''}));
+     const d=await r.json();const jobs=(d.jobs||[]).map(j=>({...j,StationSys:j.xStation||'',EMP_ID3:j.EMP_ID3||'',GOP_ID:j.GOP_ID||'',JobFailure_Detail:'',Resolve_Detail:''}));
      return new Response(JSON.stringify({ok:true,complete:true,source:'bridge_readonly',jobs}),{status:200,headers:{'Content-Type':'application/json'}});
    }
    if(path.pathname==='/api/surveys'){
      const {data,error}=await supa.from('surveys').select('id,saved_at,job_id,team,status,average,comment,evaluator,callback,answers_json').order('id',{ascending:true}).limit(1000);
      return new Response(JSON.stringify(error?{ok:false,error:error.message}:{ok:true,surveys:(data||[]).map(x=>({...x,answers:x.answers_json||[]}))}),{status:error?502:200,headers:{'Content-Type':'application/json'}});
    }
+   if(path.pathname==='/api/resolution'){return respond({ok:false,error:'Resolution endpoint requires secure bridge mapping; not enabled'},501)}
+   if(path.pathname==='/api/status'){return respond({ok:true,token:'CSS-CLOUD',pid:'cloud',source:'Supabase + local Bridge'})}
    if(path.pathname==='/api/questions'){
      const {data,error}=await supa.from('survey_questions').select('team,questions_json');
      return new Response(JSON.stringify(error?{ok:false,error:error.message}:{ok:true,questions:Object.fromEntries((data||[]).map(x=>[x.team,x.questions_json]))}),{status:error?502:200,headers:{'Content-Type':'application/json'}});
@@ -132,7 +153,7 @@ footer{font-size:11px;color:#6b7f99;display:flex;justify-content:space-between;m
 </script>
 </head>
 <body>
-<div style="padding:8px 20px;background:#fff3cd;color:#6b4b00;font:13px Segoe UI,sans-serif">CLOUD PARITY PILOT — อ่าน JOB ผ่าน Bridge (เฉพาะเครื่องที่เปิด Bridge) | ฟังก์ชันบันทึกและ Resolution ยังไม่เปิดใช้งาน</div>
+<div style="padding:8px 20px;background:#fff3cd;color:#6b4b00;font:13px Segoe UI,sans-serif">CSS CLOUD — หน้าตา CSS_FINAL V6.5 | บันทึกผลเฉพาะ JOB ที่ซิงก์เข้า Cloud แล้ว | Resolution ยังไม่รองรับ</div>
 <header>
  <div class="brand">🔧 Customer Satisfaction Survey (CSS)<small>Service Management System - JOB Dashboard</small></div>
  <div class="user"><span>📅 <span id="dashboardNow">23 กันยายน 2026</span></span><span><span id="bridgeState" style="padding:5px 9px;border-radius:12px;background:#e88728;font-size:11px">CONNECTING</span> ◉ Admin⌄</span></div>
