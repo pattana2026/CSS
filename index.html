@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CSS Cloud | Flowco</title>
+<style>
+:root{font-family:Segoe UI,Tahoma,sans-serif;color:#183451;background:#f2f6fb}*{box-sizing:border-box}body{margin:0}
+header{background:#123357;color:white;padding:18px 26px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+header strong{font-size:20px}main{max-width:1320px;margin:24px auto;padding:0 18px}
+.card{background:white;border:1px solid #dce5f0;border-radius:12px;padding:20px;margin-bottom:16px;box-shadow:0 3px 10px #17365a0a}
+input,select,textarea,button{font:inherit;border:1px solid #c8d7e8;border-radius:7px;padding:10px;max-width:100%}
+button{background:#2175d4;color:white;border:0;cursor:pointer}button:disabled{opacity:.5;cursor:wait}.secondary{background:#e8eef6;color:#17365a}
+label{display:flex;flex-direction:column;gap:5px;font-size:13px;font-weight:600}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:10px;text-align:left;border-bottom:1px solid #e2eaf3;vertical-align:top}th{background:#eaf1f9}td{max-width:340px;overflow-wrap:anywhere}
+.scroll{overflow:auto}#auth{max-width:450px;margin:8vh auto}#notice{padding:12px;border-radius:7px;background:#eaf1f9;margin-bottom:16px;white-space:pre-wrap}
+.muted{color:#60748c}#app{display:none}#logout{display:none}h2{margin:0 0 14px}textarea{width:100%;min-height:75px}
+</style></head><body>
+<header><strong>🛠 Customer Satisfaction Survey (CSS) <small>Cloud Portal</small></strong><div class="toolbar"><span id="identity"></span><button id="logout" class="secondary">ออกจากระบบ</button></div></header>
+<main><div id="notice" role="status">กำลังเตรียมการเชื่อมต่อ…</div>
+<section id="auth" class="card"><h2>เข้าสู่ระบบ CSS</h2>
+<form id="login"><div class="grid"><label>อีเมล<input type="email" id="email" autocomplete="username" required></label><label>รหัสผ่าน<input type="password" id="password" autocomplete="current-password" required></label></div>
+<p><button type="submit" id="loginBtn">เข้าสู่ระบบ</button></p></form>
+<p class="muted">สำหรับผู้ใช้งานที่ได้รับอนุมัติจากผู้ดูแลเท่านั้น</p></section>
+<section id="app">
+<div class="card"><h2>รายการ JOB จาก Supabase</h2><div class="toolbar"><label>ค้นหา JOB / สถานี<input id="search" placeholder="JOB ID หรือชื่อสถานี"></label><button id="refresh">รีเฟรชข้อมูล</button><span id="jobCount" class="muted"></span></div>
+<div class="scroll"><table><thead><tr><th>JOB ID</th><th>วันที่</th><th>สถานี</th><th>ประเภทงาน</th><th>ผู้รับผิดชอบ</th><th>ดำเนินการ</th></tr></thead><tbody id="jobRows"></tbody></table></div></div>
+<div class="card"><h2>บันทึกผลประเมิน</h2><form id="surveyForm"><div class="grid">
+<label>JOB ID<input id="jobId" required maxlength="80"></label>
+<label>ทีมงาน<select id="team"><option value="ช่าง">ช่าง</option><option value="Call Center">Call Center</option><option value="ติดตั้ง">ติดตั้ง</option><option value="ทีมอื่น ๆ">ทีมอื่น ๆ</option></select></label>
+<label>ผลการติดต่อ<select id="status"><option>ประเมินสำเร็จ</option><option>ติดต่อไม่ได้</option><option>นัดโทรใหม่</option><option>ไม่ประสงค์ประเมิน</option><option>รอโทร</option></select></label>
+<label>คะแนนเฉลี่ย (0–5)<input type="number" id="average" min="0" max="5" step=".01"></label>
+<label>ผู้ประเมิน<input id="evaluator" maxlength="150"></label>
+<label>นัดโทรใหม่<input id="callback" type="datetime-local"></label>
+</div><p><label>ความคิดเห็นลูกค้า<textarea id="comment"></textarea></label></p><button id="saveBtn" type="submit">บันทึกผลประเมิน</button></form></div>
+<div class="card"><h2>ผลประเมินที่บันทึกแล้ว</h2><div id="surveyCount" class="muted"></div><div class="scroll"><table><thead><tr><th>เวลา</th><th>JOB ID</th><th>สถานะ</th><th>คะแนน</th><th>ผู้ประเมิน</th><th>ความคิดเห็น</th></tr></thead><tbody id="surveyRows"></tbody></table></div></div>
+</section></main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="./supabase-client.js"></script>
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+const escapeHTML=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const show=(message,error=false)=>{const e=$("notice");e.textContent=message;e.style.background=error?"#ffe7e7":"#eaf1f9"};
+const client=CSSCloud.configure("sb_publishable_Q-l45YS9DmbAvaCNV6Npxw_JAfeL0nb");
+let jobs=[];
+function value(j,...names){for(const name of names){if(j[name]!=null&&j[name]!=="")return j[name]}return ""}
+function renderJobs(){const q=$("search").value.trim().toLowerCase();const found=jobs.filter(j=>!q||JSON.stringify(j).toLowerCase().includes(q));$("jobCount").textContent="JOB "+found.length.toLocaleString()+" รายการ";
+$("jobRows").innerHTML=found.slice(0,500).map(j=>{const id=value(j,"JOB_ID");return "<tr><td>"+escapeHTML(id)+"</td><td>"+escapeHTML(value(j,"CLOSE_DATE","JOB_DATE","DATE_CLOSE"))+"</td><td>"+escapeHTML(value(j,"STA_NAME","STATION_NAME","STA_ID"))+"</td><td>"+escapeHTML(value(j,"WORK_TYPE","TYPE_NAME"))+"</td><td>"+escapeHTML(value(j,"VANID","VAN_ID"))+"</td><td><button type='button' class='choose' data-id='"+escapeHTML(id)+"'>ประเมิน</button></td></tr>"}).join("")||"<tr><td colspan='6'>ยังไม่มีข้อมูล JOB บน Cloud</td></tr>";
+$("jobRows").querySelectorAll(".choose").forEach(b=>b.addEventListener("click",()=>{$("jobId").value=b.dataset.id;$("jobId").focus()}));}
+async function reload(){show("กำลังอ่านข้อมูล Supabase…");try{const [a,b]=await Promise.all([CSSCloud.loadJobs(),CSSCloud.loadSurveys()]);jobs=a;renderJobs();$("surveyCount").textContent="ผลประเมิน "+b.length.toLocaleString()+" รายการ";$("surveyRows").innerHTML=b.slice(0,500).map(s=>"<tr><td>"+escapeHTML(s.saved_at)+"</td><td>"+escapeHTML(s.job_id)+"</td><td>"+escapeHTML(s.status)+"</td><td>"+escapeHTML(s.average)+"</td><td>"+escapeHTML(s.evaluator)+"</td><td>"+escapeHTML(s.comment)+"</td></tr>").join("")||"<tr><td colspan='6'>ยังไม่มีผลประเมินบน Cloud</td></tr>";show("เชื่อมต่อ Supabase สำเร็จ")}catch(e){show("อ่านข้อมูลไม่สำเร็จ: "+e.message,true)}}
+async function enter(){const m=await CSSCloud.currentMember();if(!m||!m.active){$("auth").style.display="block";$("app").style.display="none";$("logout").style.display="none";show("กรุณาเข้าสู่ระบบด้วยบัญชีที่ได้รับอนุมัติ");return}
+$("auth").style.display="none";$("app").style.display="block";$("logout").style.display="inline-block";$("identity").textContent=m.role;await reload()}
+$("login").addEventListener("submit",async e=>{e.preventDefault();$("loginBtn").disabled=true;try{await CSSCloud.signIn($("email").value,$("password").value);$("password").value="";await enter()}catch(err){show("เข้าสู่ระบบไม่สำเร็จ: "+err.message,true)}finally{$("loginBtn").disabled=false}});
+$("logout").addEventListener("click",async()=>{await CSSCloud.signOut();$("identity").textContent="";await enter()});
+$("refresh").addEventListener("click",reload);$("search").addEventListener("input",renderJobs);
+$("surveyForm").addEventListener("submit",async e=>{e.preventDefault();$("saveBtn").disabled=true;try{const record={job_id:$("jobId").value.trim(),team:$("team").value,status:$("status").value,average:$("average").value===""?null:Number($("average").value),evaluator:$("evaluator").value,callback:$("callback").value||null,comment:$("comment").value,answers:[]};if(!record.job_id)throw Error("ต้องระบุ JOB ID");if(record.average!==null&&(record.average<0||record.average>5))throw Error("คะแนนต้องอยู่ระหว่าง 0–5");await CSSCloud.saveSurvey(record);$("surveyForm").reset();await reload();show("บันทึกผลประเมินสำเร็จ")}catch(err){show("บันทึกไม่สำเร็จ: "+err.message,true)}finally{$("saveBtn").disabled=false}});
+enter().catch(e=>show("ไม่สามารถตรวจสอบสิทธิ์: "+e.message,true));
+</script></body></html>
