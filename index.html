@@ -144,7 +144,10 @@ footer{font-size:11px;color:#6b7f99;display:flex;justify-content:space-between;m
        const date=String(j.CloseDate||'').slice(0,10);
        return (!from||date>=from)&&(!to||date<=to);
      });
-     return respond({ok:true,complete:true,source:'supabase',jobs});
+     const dates=cloudJobs.map(x=>String(x.job_data?.CloseDate||'').slice(0,10)).filter(d=>/^\d{4}-\d{2}-\d{2}$/.test(d)).sort();
+     const earliest=dates[0]||null,latest=dates[dates.length-1]||null;
+     const coverageUnknown=Boolean((from&&(!earliest||from<earliest))||(to&&(!latest||to>latest)));
+     return respond({ok:true,complete:true,coverageUnknown,earliest,latest,source:'supabase',jobs});
    }
    if(path.pathname==='/api/surveys'){
      const data=[];let error=null;for(let offset=0;offset<100000;offset+=1000){const page=await supa.from('surveys').select('id,saved_at,job_id,team,status,average,comment,evaluator,callback,answers_json').order('id',{ascending:false}).range(offset,offset+999);if(page.error){error=page.error;break;}data.push(...(page.data||[]));if(!page.data||page.data.length<1000)break;}
@@ -703,7 +706,12 @@ async function loadJobsFromBridge(){
    smsJobs=data.jobs;
    fillJobSelect("fVan",smsJobs.map(vanName));fillJobSelect("fGroup",smsJobs.map(groupName));fillJobSelect("fWork",smsJobs.map(workName));fillJobSelect("fStation",smsJobs.map(j=>val(j,"STA_ID")));
    applyJobFilters();
-   b.textContent=data.source==="supabase"?"CLOUD LIVE":data.source==="sms_live"?"SMS LIVE":"LOCAL BRIDGE";b.style.background=data.source==="supabase"||data.source==="sms_live"?"#159b62":"#e88728";
+   b.textContent=data.coverageUnknown?"CLOUD DATA INCOMPLETE":data.source==="supabase"?"CLOUD CACHE":data.source==="sms_live"?"SMS LIVE":"LOCAL BRIDGE";b.style.background=data.coverageUnknown?"#e88728":data.source==="supabase"||data.source==="sms_live"?"#159b62":"#e88728";
+   if(data.coverageUnknown){
+     let note=document.getElementById("cssCloudCoverageNote");
+     if(!note){note=document.createElement("p");note.id="cssCloudCoverageNote";note.style.cssText="margin:8px 0;padding:10px 12px;border-left:4px solid #e88728;background:#fff7ed;color:#854d0e;font-size:13px";b.parentElement.appendChild(note);}
+     note.textContent="ข้อมูล Cloud ยังไม่ครอบคลุมวันที่ที่เลือก (มีข้อมูลตั้งแต่ "+(data.earliest||"ไม่ทราบ")+" ถึง "+(data.latest||"ไม่ทราบ")+"). ผลค้นหาอาจไม่ครบ ต้องนำเข้าจาก SMS ก่อน";
+   }else{document.getElementById("cssCloudCoverageNote")?.remove();}
  }catch(e){b.textContent="LOAD FAILED";b.style.background="#d84b4b";alert("ไม่สามารถโหลด JOB: "+e.message+"\nข้อมูลเดิมที่โหลดสำเร็จยังคงแสดงอยู่");}
 }
 function exportJobsCSV(){
