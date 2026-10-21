@@ -97,7 +97,8 @@ footer{font-size:11px;color:#6b7f99;display:flex;justify-content:space-between;m
 /* Cloud parity pilot: original V6.5 interface, authenticated read-only local SMS bridge. */
 (function(){
  const supa=window.supabase.createClient('https://ydlrbhvbxnryqtuzgxfc.supabase.co','sb_publishable_Q-l45YS9DmbAvaCNV6Npxw_JAfeL0nb');
- const realFetch=window.fetch.bind(window);\n window.__cssCloudMode=true;
+ const realFetch=window.fetch.bind(window);
+ window.__cssCloudMode=true;
  let ready=false;
  const respond=(obj,status=200)=>new Response(JSON.stringify(obj),{status,headers:{'Content-Type':'application/json'}});
  const authSession=async()=>{const {data,error}=await supa.auth.getSession();if(error||!data.session?.access_token)throw Error('Session expired');return data.session;};
@@ -715,7 +716,7 @@ window.addEventListener("DOMContentLoaded",()=>{
 
 
 // Cloud mode retains the original diagnostic layout without attempting inaccessible localhost SMS services.
-async async function checkCloudSystem(){
+async function checkCloudSystem(){
  const out=document.getElementById("diagOut");out.textContent="Checking Supabase Cloud...\\n";
  const set=(id,value,detail)=>{const el=document.getElementById(id);if(el)el.textContent=value;const d=document.getElementById(id+"D");if(d&&detail)d.textContent=detail};
  try{
