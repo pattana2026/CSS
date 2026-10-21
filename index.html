@@ -1,57 +1,814 @@
 <!doctype html>
-<html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CSS Cloud | Flowco</title>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Customer Satisfaction Survey (CSS)</title>
 <style>
-:root{font-family:Segoe UI,Tahoma,sans-serif;color:#183451;background:#f2f6fb}*{box-sizing:border-box}body{margin:0}
-header{background:#123357;color:white;padding:18px 26px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
-header strong{font-size:20px}main{max-width:1320px;margin:24px auto;padding:0 18px}
-.card{background:white;border:1px solid #dce5f0;border-radius:12px;padding:20px;margin-bottom:16px;box-shadow:0 3px 10px #17365a0a}
-input,select,textarea,button{font:inherit;border:1px solid #c8d7e8;border-radius:7px;padding:10px;max-width:100%}
-button{background:#2175d4;color:white;border:0;cursor:pointer}button:disabled{opacity:.5;cursor:wait}.secondary{background:#e8eef6;color:#17365a}
-label{display:flex;flex-direction:column;gap:5px;font-size:13px;font-weight:600}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:10px;text-align:left;border-bottom:1px solid #e2eaf3;vertical-align:top}th{background:#eaf1f9}td{max-width:340px;overflow-wrap:anywhere}
-.scroll{overflow:auto}#auth{max-width:450px;margin:8vh auto}#notice{padding:12px;border-radius:7px;background:#eaf1f9;margin-bottom:16px;white-space:pre-wrap}
-.muted{color:#60748c}#app{display:none}#logout{display:none}h2{margin:0 0 14px}textarea{width:100%;min-height:75px}
-</style></head><body>
-<header><strong>🛠 Customer Satisfaction Survey (CSS) <small>Cloud Portal</small></strong><div class="toolbar"><span id="identity"></span><button id="logout" class="secondary">ออกจากระบบ</button></div></header>
-<main><div id="notice" role="status">กำลังเตรียมการเชื่อมต่อ…</div>
-<section id="auth" class="card"><h2>เข้าสู่ระบบ CSS</h2>
-<form id="login"><div class="grid"><label>อีเมล<input type="email" id="email" autocomplete="username" required></label><label>รหัสผ่าน<input type="password" id="password" autocomplete="current-password" required></label></div>
-<p><button type="submit" id="loginBtn">เข้าสู่ระบบ</button></p></form>
-<p class="muted">สำหรับผู้ใช้งานที่ได้รับอนุมัติจากผู้ดูแลเท่านั้น</p></section>
-<section id="app">
-<div class="card"><h2>รายการ JOB จาก Supabase</h2><div class="toolbar"><label>ค้นหา JOB / สถานี<input id="search" placeholder="JOB ID หรือชื่อสถานี"></label><button id="refresh">รีเฟรชข้อมูล</button><span id="jobCount" class="muted"></span></div>
-<div class="scroll"><table><thead><tr><th>JOB ID</th><th>วันที่</th><th>สถานี</th><th>ประเภทงาน</th><th>ผู้รับผิดชอบ</th><th>ดำเนินการ</th></tr></thead><tbody id="jobRows"></tbody></table></div></div>
-<div class="card"><h2>บันทึกผลประเมิน</h2><form id="surveyForm"><div class="grid">
-<label>JOB ID<input id="jobId" required maxlength="80"></label>
-<label>ทีมงาน<select id="team"><option value="ช่าง">ช่าง</option><option value="Call Center">Call Center</option><option value="ติดตั้ง">ติดตั้ง</option><option value="ทีมอื่น ๆ">ทีมอื่น ๆ</option></select></label>
-<label>ผลการติดต่อ<select id="status"><option>ประเมินสำเร็จ</option><option>ติดต่อไม่ได้</option><option>นัดโทรใหม่</option><option>ไม่ประสงค์ประเมิน</option><option>รอโทร</option></select></label>
-<label>คะแนนเฉลี่ย (0–5)<input type="number" id="average" min="0" max="5" step=".01"></label>
-<label>ผู้ประเมิน<input id="evaluator" maxlength="150"></label>
-<label>นัดโทรใหม่<input id="callback" type="datetime-local"></label>
-</div><p><label>ความคิดเห็นลูกค้า<textarea id="comment"></textarea></label></p><button id="saveBtn" type="submit">บันทึกผลประเมิน</button></form></div>
-<div class="card"><h2>ผลประเมินที่บันทึกแล้ว</h2><div id="surveyCount" class="muted"></div><div class="scroll"><table><thead><tr><th>เวลา</th><th>JOB ID</th><th>สถานะ</th><th>คะแนน</th><th>ผู้ประเมิน</th><th>ความคิดเห็น</th></tr></thead><tbody id="surveyRows"></tbody></table></div></div>
-</section></main>
+:root{--navy:#16385f;--navy2:#102c4d;--blue:#2377df;--bg:#f3f7fb;--line:#dbe4ef;--text:#152a47;--muted:#667a94;--green:#159b62;--red:#d84b4b;--orange:#e88728}
+*{box-sizing:border-box} body{margin:0;font-family:"Segoe UI",Tahoma,sans-serif;background:var(--bg);color:var(--text)}
+header{height:68px;background:linear-gradient(110deg,var(--navy2),var(--navy));color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 22px;box-shadow:0 2px 8px #0002}
+.brand{font-size:21px;font-weight:700}.brand small{display:block;font-size:13px;font-weight:400;opacity:.85;margin-top:2px}
+.user{font-size:14px;display:flex;gap:20px;align-items:center}
+.shell{display:flex;min-height:calc(100vh - 68px)}
+aside{width:205px;background:linear-gradient(180deg,#173b64,#112d4d);color:#eaf3ff;padding:16px 8px}
+.nav{padding:12px 14px;border-radius:6px;margin-bottom:4px;font-size:14px}.nav.active{background:#2474d2;color:white}.nav span{display:inline-block;width:28px}
+main{flex:1;padding:12px 16px 24px;min-width:0}
+.panel{background:#fff;border:1px solid var(--line);border-radius:9px;box-shadow:0 1px 4px #15365b0d;margin-bottom:12px}
+.search{padding:14px 16px}.search h2,.table-title{margin:0 0 12px;font-size:18px}
+.filters{display:grid;grid-template-columns:repeat(5,minmax(140px,1fr));gap:12px}
+.field label{display:block;font-size:13px;font-weight:600;margin-bottom:5px}.field input,.field select{width:100%;height:38px;border:1px solid #cdd8e5;border-radius:6px;padding:0 10px;background:white;color:#233b59}
+.actions{display:flex;align-items:end;gap:10px}.btn{border:0;border-radius:6px;padding:10px 20px;font-weight:600;cursor:pointer}.primary{background:var(--blue);color:#fff}.secondary{background:#eaf2fb;color:#264766}
+.cards{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:12px}.card{padding:16px;background:#fff;border:1px solid var(--line);border-radius:9px;display:flex;gap:12px;align-items:center}.ico{width:54px;height:54px;border-radius:8px;display:grid;place-items:center;font-size:26px;background:#dceeff}.card:nth-child(2) .ico{background:#d9f6e7}.card:nth-child(3) .ico{background:#ffe0e0}.card:nth-child(4) .ico{background:#e8ddff}.card:nth-child(5) .ico{background:#ffe9cf}.klabel{font-size:13px}.kvalue{font-size:24px;font-weight:750;margin-top:4px}.sub{font-size:12px;color:var(--muted)}
+.table-panel{padding:12px}.toolbar{display:flex;justify-content:space-between;align-items:center}.tools{display:flex;gap:8px}.excel{background:#159b62;color:#fff}.print{background:#eaf0f7;color:#264766}
+table{width:100%;border-collapse:collapse;font-size:12px}th{background:#eaf1f8;text-align:left;padding:10px 8px;border:1px solid #dbe4ee;white-space:nowrap}td{padding:9px 8px;border:1px solid #e2e8f0;white-space:nowrap}.status{padding:4px 8px;border-radius:12px;font-weight:600}.done{background:#d9f5e5;color:#087d47}.pending{background:#ffe0df;color:#a02c2c}
+.charts{display:grid;grid-template-columns:1fr 1.05fr 1.1fr;gap:10px}.chart{padding:14px;min-height:205px}.chart h3{font-size:14px;margin:0 0 14px}.donut-wrap{display:flex;align-items:center;gap:22px}.donut{width:135px;height:135px;border-radius:50%;background:conic-gradient(#2b7de0 0 42%,#40b879 42% 74%,#ef4c46 74% 89%,#9aaabd 89%);position:relative}.donut:after{content:"";position:absolute;inset:35px;background:#fff;border-radius:50%}.legend{font-size:12px;line-height:2}
+.bars{height:145px;display:flex;align-items:end;gap:14px;border-left:1px solid #b9c8d9;border-bottom:1px solid #b9c8d9;padding:0 10px}.bar{flex:1;background:linear-gradient(#62a9ef,#2b7de0);position:relative}.bar small{position:absolute;bottom:-22px;left:50%;transform:translateX(-50%)}
+.hbar-row{display:grid;grid-template-columns:90px 1fr 35px;align-items:center;gap:8px;font-size:12px;margin:10px 0}.hbar{height:15px;background:#3a92e8}
+footer{font-size:11px;color:#6b7f99;display:flex;justify-content:space-between;margin-top:18px}
+@media(max-width:1100px){aside{display:none}.filters{grid-template-columns:repeat(3,1fr)}.cards{grid-template-columns:repeat(2,1fr)}.charts{grid-template-columns:1fr}}
+
+.survey-btn{background:#6b4fd3;color:#fff;border:0;border-radius:5px;padding:6px 10px;cursor:pointer;font-weight:600}
+.queue{background:#fff4d8;color:#9a6500}.retry{background:#e9e2ff;color:#5d43b6}.decline{background:#eceff3;color:#596779}
+.modal{display:none;position:fixed;inset:0;background:#0b1f36aa;z-index:1000;padding:22px;overflow:auto}
+.modal.show{display:flex;align-items:flex-start;justify-content:center}
+.dialog{width:min(940px,100%);background:#fff;border-radius:12px;box-shadow:0 18px 60px #0005;margin:24px auto;overflow:hidden}
+.dialog-head{background:linear-gradient(110deg,#173b64,#245c96);color:#fff;padding:16px 20px;display:flex;justify-content:space-between;align-items:center}
+.dialog-head h2{margin:0;font-size:19px}.close{background:transparent;border:0;color:#fff;font-size:25px;cursor:pointer}
+.dialog-body{padding:18px}.job-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;background:#f4f8fc;border:1px solid #dbe6f0;padding:12px;border-radius:8px;margin-bottom:15px}
+.job-summary b{display:block;font-size:11px;color:#71839a;margin-bottom:3px}.survey-tabs{display:flex;gap:8px;margin-bottom:14px}
+.tab{border:1px solid #cfdbe8;background:#f6f9fc;border-radius:7px;padding:9px 14px;cursor:pointer;font-weight:650}.tab.active{background:#2377df;color:#fff;border-color:#2377df}
+.question{border:1px solid #e0e7ef;border-radius:8px;padding:12px;margin:9px 0}.question strong{display:block;margin-bottom:9px}
+.rating{display:flex;gap:7px}.rating button{width:38px;height:34px;border:1px solid #cbd7e4;background:#fff;border-radius:6px;cursor:pointer}.rating button.sel{background:#2377df;color:#fff;border-color:#2377df}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}.form-grid label{font-size:12px;font-weight:650}.form-grid select,.form-grid input,.comment{width:100%;border:1px solid #cbd7e4;border-radius:6px;padding:9px;margin-top:5px}
+.comment{min-height:80px;resize:vertical}.dialog-foot{padding:14px 18px;border-top:1px solid #e2e8ef;display:flex;justify-content:space-between;align-items:center}.danger-note{font-size:12px;color:#b33}
+@media(max-width:800px){.job-summary,.form-grid{grid-template-columns:1fr}.survey-tabs{flex-wrap:wrap}}
+
+
+/* V3: readable job detail columns and contextual survey information */
+#jobTable{min-width:1500px;table-layout:fixed}
+#jobTable th,#jobTable td{white-space:normal;vertical-align:top;overflow-wrap:anywhere;line-height:1.5}
+#jobTable th:nth-child(1),#jobTable td:nth-child(1){width:42px}
+#jobTable th:nth-child(2),#jobTable td:nth-child(2){width:102px}
+#jobTable th:nth-child(3),#jobTable td:nth-child(3){width:125px}
+#jobTable th:nth-child(4),#jobTable td:nth-child(4){width:75px}
+#jobTable th:nth-child(5),#jobTable td:nth-child(5){width:82px}
+#jobTable th:nth-child(6),#jobTable td:nth-child(6){width:155px}
+#jobTable th:nth-child(7),#jobTable td:nth-child(7){width:100px}
+#jobTable th:nth-child(8),#jobTable td:nth-child(8){width:110px}
+#jobTable th:nth-child(9),#jobTable td:nth-child(9){width:100px}
+#jobTable th:nth-child(10),#jobTable td:nth-child(10){width:170px}
+#jobTable th:nth-child(11),#jobTable td:nth-child(11){width:305px}
+#jobTable th:nth-child(12),#jobTable td:nth-child(12){width:82px}
+#jobTable th:nth-child(13),#jobTable td:nth-child(13){width:115px}
+#jobTable td:nth-child(10),#jobTable td:nth-child(11){white-space:pre-wrap}
+#jobTable td:nth-child(11) .resolution-entry{padding:0 0 9px;margin:0 0 9px;border-bottom:1px dashed #d9e4ef}
+#jobTable td:nth-child(11) .resolution-entry:last-child{border-bottom:0;margin-bottom:0;padding-bottom:0}
+.survey-context{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:12px;margin:-3px 0 16px}
+.survey-context-card{border:1px solid #dbe6f0;background:#fbfdff;border-radius:9px;padding:12px 14px;min-width:0}
+.survey-context-card h3{margin:0 0 9px;font-size:14px;color:#214a76}
+.survey-context-text{font-size:13px;line-height:1.65;white-space:pre-wrap;overflow-wrap:anywhere;max-height:220px;overflow-y:auto}
+.survey-context-text .resolution-entry{padding:0 0 9px;margin:0 0 9px;border-bottom:1px solid #e3ebf4}
+.survey-context-text .resolution-entry:last-child{border-bottom:0;margin:0;padding:0}
+.survey-context-note{font-size:12px;color:#637994}
+@media(max-width:700px){.survey-context{grid-template-columns:1fr}}
+.css-3cx-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0 18px}
+.css-3cx-grid .survey-context-card{min-width:0}
+.css-contact-line{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:8px 0;border-bottom:1px solid #e4ebf4}
+.css-contact-line:last-child{border-bottom:0}
+.css-contact-line a{display:inline-block;padding:7px 12px;border-radius:8px;background:#e8f7f0;color:#087f5b;border:1px solid #b9ead9;font-weight:700;text-decoration:none}
+.css-contact-line a:hover{background:#d7f0e3}
+.css-3cx-three{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media(max-width:960px){.css-3cx-three{grid-template-columns:1fr}}
+@media(max-width:760px){.css-3cx-grid{grid-template-columns:1fr}}
+
+.v63-team-grid,.v63-pie-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(225px,1fr));gap:12px}
+.v64-section{border:1px solid #dce5ef;border-radius:14px;padding:18px;margin:16px 0;background:#f8fbff}.v64-section h3{margin:0 0 5px;color:#092c56}.v64-section .v63-pie-grid{margin-top:14px}.v64-subtitle{color:#52667c;font-size:12px;margin:0}.v64-empty{padding:15px;color:#64748b;background:#fff;border-radius:10px;margin-top:12px}
+.v63-team-card,.v63-pie-card{border:1px solid #dce5ef;border-radius:12px;padding:15px;background:#fff}
+.v63-team-card .v63-pct{font-size:30px;font-weight:800;margin:8px 0}
+.v63-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:12px;color:#52667c}
+.v63-stats strong{display:block;font-size:18px;color:#1c3048}
+.v63-pie{width:135px;height:135px;margin:12px auto;border-radius:50%;display:grid;place-items:center}
+.v63-pie span{background:white;width:94px;height:94px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:23px}
+.v63-note{color:#667b91;font-size:12px;margin:5px 0}
+</style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="./supabase-client.js"></script>
 <script>
-"use strict";
-const $=id=>document.getElementById(id);
-const escapeHTML=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const show=(message,error=false)=>{const e=$("notice");e.textContent=message;e.style.background=error?"#ffe7e7":"#eaf1f9"};
-const client=CSSCloud.configure("sb_publishable_Q-l45YS9DmbAvaCNV6Npxw_JAfeL0nb");
-let jobs=[];
-function value(j,...names){for(const name of names){if(j[name]!=null&&j[name]!=="")return j[name]}return ""}
-function renderJobs(){const q=$("search").value.trim().toLowerCase();const found=jobs.filter(j=>!q||JSON.stringify(j).toLowerCase().includes(q));$("jobCount").textContent="JOB "+found.length.toLocaleString()+" รายการ";
-$("jobRows").innerHTML=found.slice(0,500).map(j=>{const id=value(j,"JOB_ID");return "<tr><td>"+escapeHTML(id)+"</td><td>"+escapeHTML(value(j,"CLOSE_DATE","JOB_DATE","DATE_CLOSE"))+"</td><td>"+escapeHTML(value(j,"STA_NAME","STATION_NAME","STA_ID"))+"</td><td>"+escapeHTML(value(j,"WORK_TYPE","TYPE_NAME"))+"</td><td>"+escapeHTML(value(j,"VANID","VAN_ID"))+"</td><td><button type='button' class='choose' data-id='"+escapeHTML(id)+"'>ประเมิน</button></td></tr>"}).join("")||"<tr><td colspan='6'>ยังไม่มีข้อมูล JOB บน Cloud</td></tr>";
-$("jobRows").querySelectorAll(".choose").forEach(b=>b.addEventListener("click",()=>{$("jobId").value=b.dataset.id;$("jobId").focus()}));}
-async function reload(){show("กำลังอ่านข้อมูล Supabase…");try{const [a,b]=await Promise.all([CSSCloud.loadJobs(),CSSCloud.loadSurveys()]);jobs=a;renderJobs();$("surveyCount").textContent="ผลประเมิน "+b.length.toLocaleString()+" รายการ";$("surveyRows").innerHTML=b.slice(0,500).map(s=>"<tr><td>"+escapeHTML(s.saved_at)+"</td><td>"+escapeHTML(s.job_id)+"</td><td>"+escapeHTML(s.status)+"</td><td>"+escapeHTML(s.average)+"</td><td>"+escapeHTML(s.evaluator)+"</td><td>"+escapeHTML(s.comment)+"</td></tr>").join("")||"<tr><td colspan='6'>ยังไม่มีผลประเมินบน Cloud</td></tr>";show("เชื่อมต่อ Supabase สำเร็จ")}catch(e){show("อ่านข้อมูลไม่สำเร็จ: "+e.message,true)}}
-async function enter(){const m=await CSSCloud.currentMember();if(!m||!m.active){$("auth").style.display="block";$("app").style.display="none";$("logout").style.display="none";show("กรุณาเข้าสู่ระบบด้วยบัญชีที่ได้รับอนุมัติ");return}
-$("auth").style.display="none";$("app").style.display="block";$("logout").style.display="inline-block";$("identity").textContent=m.role;await reload()}
-$("login").addEventListener("submit",async e=>{e.preventDefault();$("loginBtn").disabled=true;try{await CSSCloud.signIn($("email").value,$("password").value);$("password").value="";await enter()}catch(err){show("เข้าสู่ระบบไม่สำเร็จ: "+err.message,true)}finally{$("loginBtn").disabled=false}});
-$("logout").addEventListener("click",async()=>{await CSSCloud.signOut();$("identity").textContent="";await enter()});
-$("refresh").addEventListener("click",reload);$("search").addEventListener("input",renderJobs);
-$("surveyForm").addEventListener("submit",async e=>{e.preventDefault();$("saveBtn").disabled=true;try{const record={job_id:$("jobId").value.trim(),team:$("team").value,status:$("status").value,average:$("average").value===""?null:Number($("average").value),evaluator:$("evaluator").value,callback:$("callback").value||null,comment:$("comment").value,answers:[]};if(!record.job_id)throw Error("ต้องระบุ JOB ID");if(record.average!==null&&(record.average<0||record.average>5))throw Error("คะแนนต้องอยู่ระหว่าง 0–5");await CSSCloud.saveSurvey(record);$("surveyForm").reset();await reload();show("บันทึกผลประเมินสำเร็จ")}catch(err){show("บันทึกไม่สำเร็จ: "+err.message,true)}finally{$("saveBtn").disabled=false}});
-enter().catch(e=>show("ไม่สามารถตรวจสอบสิทธิ์: "+e.message,true));
-</script><script src="./css-contact-bridge-v2.js"></script></body></html>
+/* Cloud parity pilot: original V6.5 interface, authenticated read-only local SMS bridge. */
+(function(){
+ const supa=window.supabase.createClient('https://ydlrbhvbxnryqtuzgxfc.supabase.co','sb_publishable_Q-l45YS9DmbAvaCNV6Npxw_JAfeL0nb');
+ const realFetch=window.fetch.bind(window);\n window.__cssCloudMode=true;
+ let ready=false;
+ const respond=(obj,status=200)=>new Response(JSON.stringify(obj),{status,headers:{'Content-Type':'application/json'}});
+ const authSession=async()=>{const {data,error}=await supa.auth.getSession();if(error||!data.session?.access_token)throw Error('Session expired');return data.session;};
+ const overlay=document.createElement('div');overlay.id='cssCloudGate';overlay.style.cssText='position:fixed;z-index:99999;inset:0;background:#f2f6fb;display:flex;align-items:center;justify-content:center;font:15px Segoe UI,sans-serif';
+ overlay.innerHTML='<div style="background:white;padding:30px;border-radius:12px;box-shadow:0 6px 30px #0002;width:380px;max-width:95vw"><h2 style="margin:0 0 16px">CSS V6.5 — Cloud Login</h2><p>เข้าสู่ระบบด้วยบัญชี Supabase ที่ได้รับอนุมัติ</p><form id="cloudLogin"><input id="cloudEmail" type="email" placeholder="Email" required style="width:100%;padding:10px;margin-bottom:10px"><input id="cloudPassword" type="password" placeholder="Password" required style="width:100%;padding:10px;margin-bottom:10px"><button style="padding:10px;width:100%;background:#2175d4;color:white;border:0">เข้าสู่ระบบ</button></form><p id="cloudError" role="alert" style="color:#b91c1c"></p></div>';
+ document.addEventListener('DOMContentLoaded',()=>{document.body.append(overlay);document.getElementById('cloudLogin').onsubmit=async e=>{e.preventDefault();try{const {error}=await supa.auth.signInWithPassword({email:document.getElementById('cloudEmail').value,password:document.getElementById('cloudPassword').value});if(error)throw error;await check();}catch(x){document.getElementById('cloudError').textContent=x.message}};check().catch(()=>{});});
+ async function check(){const {data:{user}}=await supa.auth.getUser();if(!user)return;const {data,error}=await supa.from('css_members').select('active').eq('user_id',user.id).maybeSingle();if(error||!data?.active)return;ready=true;overlay.remove();setTimeout(()=>{if(typeof loadJobsFromBridge==='function')loadJobsFromBridge();if(typeof loadSurveyRecords==='function')loadSurveyRecords().catch(()=>{});},100);}
+ window.fetch=async function(input,options){
+   const raw=typeof input==='string'?input:input?.url||'';
+   if(!raw.startsWith('/api/'))return realFetch(input,options);
+   if(!ready)return new Response(JSON.stringify({ok:false,error:'Login required'}),{status:401,headers:{'Content-Type':'application/json'}});
+   const path=new URL(raw,location.origin),method=(options?.method||'GET').toUpperCase();
+   if(method==='POST' && path.pathname==='/api/surveys'){
+     try{
+       const record=JSON.parse(options?.body||'{}');const jobId=String(record.job_id||'').trim();if(!jobId)throw Error('Missing JOB ID');
+       const {data:job,error:jobError}=await supa.from('css_jobs').select('job_id').eq('job_id',jobId).maybeSingle();
+       if(jobError)throw jobError;if(!job)throw Error('ยังไม่มี JOB นี้ใน Supabase: ต้องซิงก์ข้อมูล JOB ที่ไม่มีข้อมูลส่วนบุคคลก่อนบันทึก');
+       const {data:{user},error:userError}=await supa.auth.getUser();if(userError||!user)throw Error('Session expired');
+       const {data,error}=await supa.from('surveys').insert({job_id:jobId,team:record.team||null,status:record.status,average:record.average==null?null:Number(record.average),comment:record.comment||null,evaluator:record.evaluator||null,callback:record.callback||null,answers_json:record.answers||[],created_by:user.id}).select('id').single();
+       if(error)throw error;return respond({ok:true,id:data.id});
+     }catch(e){return respond({ok:false,error:e.message},400)}
+   }
+   if(method==='POST' && path.pathname==='/api/questions'){
+     try{const record=JSON.parse(options?.body||'{}');if(!record.team||!Array.isArray(record.questions)||record.questions.length<1||record.questions.length>20)throw Error('Invalid question data');
+       const {data:member,error:memberError}=await supa.from('css_members').select('role,active').eq('user_id',(await supa.auth.getUser()).data.user?.id).maybeSingle();
+       if(memberError||!member?.active||member.role!=='admin')throw Error('Only admin can edit questions');
+       const {error}=await supa.from('survey_questions').upsert({team:record.team,questions_json:record.questions},{onConflict:'team'});if(error)throw error;
+       return respond({ok:true});
+     }catch(e){return respond({ok:false,error:e.message},403)}
+   }
+   if(method!=='GET')return respond({ok:false,error:'Unsupported operation'},405);
+   if(path.pathname==='/api/jobs'){
+     const from=path.searchParams.get('from'),to=path.searchParams.get('to');
+     await authSession();
+     const cloudJobs=[];
+     for(let offset=0;offset<100000;offset+=1000){
+       const {data,error}=await supa.from('css_jobs').select('job_data').order('job_id',{ascending:true}).range(offset,offset+999);
+       if(error)return respond({ok:false,error:error.message},502);
+       cloudJobs.push(...(data||[]));
+       if(!data||data.length<1000)break;
+     }
+     const jobs=cloudJobs.map(x=>x.job_data).filter(Boolean).filter(j=>{
+       const date=String(j.CloseDate||'').slice(0,10);
+       return (!from||date>=from)&&(!to||date<=to);
+     });
+     return respond({ok:true,complete:true,source:'supabase',jobs});
+   }
+   if(path.pathname==='/api/surveys'){
+     const data=[];let error=null;for(let offset=0;offset<100000;offset+=1000){const page=await supa.from('surveys').select('id,saved_at,job_id,team,status,average,comment,evaluator,callback,answers_json').order('id',{ascending:false}).range(offset,offset+999);if(page.error){error=page.error;break;}data.push(...(page.data||[]));if(!page.data||page.data.length<1000)break;}
+     return new Response(JSON.stringify(error?{ok:false,error:error.message}:{ok:true,surveys:(data||[]).map(x=>({...x,answers:x.answers_json||[]}))}),{status:error?502:200,headers:{'Content-Type':'application/json'}});
+   }
+   if(path.pathname==='/api/resolution'){
+     const jobId=path.searchParams.get('job_id');
+     if(!jobId)return respond({ok:false,error:'Missing JOB ID'},400);
+     const {data,error}=await supa.from('css_jobs').select('job_data').eq('job_id',jobId).maybeSingle();
+     if(error)return respond({ok:false,error:error.message},502);
+     if(!data)return respond({ok:false,error:'JOB not found'},404);
+     const details=Array.isArray(data.job_data?.ResolutionDetails)?data.job_data.ResolutionDetails:[];
+     if(details.length)return respond({ok:true,complete:true,source:'supabase',details});
+     return respond({ok:false,error:'ยังไม่มีประวัติผลการแก้ไขของ JOB นี้บน Cloud — ต้องนำเข้าจาก SMS ก่อน',complete:false},424);
+   }
+   if(path.pathname==='/api/status'){return respond({ok:true,token:'CSS-CLOUD',pid:'cloud',source:'Supabase',note:'SMS live bridge unavailable in cloud'})}
+   if(path.pathname==='/api/questions'){
+     const {data,error}=await supa.from('survey_questions').select('team,questions_json');
+     return new Response(JSON.stringify(error?{ok:false,error:error.message}:{ok:true,questions:Object.assign(Object.fromEntries(['ติดตั้ง','Call Center','Service','ทีมอื่น ๆ'].map(t=>[t,['ความพึงพอใจต่อการให้บริการ','ความรวดเร็วในการดำเนินงาน','การสื่อสารและการให้ข้อมูล','คุณภาพของการแก้ไข/บริการ']])),Object.fromEntries((data||[]).map(x=>[x.team,x.questions_json])))}),{status:error?502:200,headers:{'Content-Type':'application/json'}});
+   }
+   return new Response(JSON.stringify({ok:false,error:'Endpoint not available in Cloud pilot'}),{status:501,headers:{'Content-Type':'application/json'}});
+ };
+})();
+</script>
+</head>
+<body>
+<header>
+ <div class="brand">🔧 Customer Satisfaction Survey (CSS)<small>Service Management System - JOB Dashboard</small></div>
+ <div class="user"><span>📅 <span id="dashboardNow">23 กันยายน 2026</span></span><span><span id="bridgeState" style="padding:5px 9px;border-radius:12px;background:#e88728;font-size:11px">CONNECTING</span> ◉ Admin⌄</span></div>
+</header>
+<div class="shell">
+<aside>
+ <div class="nav active" onclick="showView('dashboard',this)"><span>⌂</span>Dashboard</div>
+ <div class="nav" onclick="showView('dashboard',this)"><span>☷</span>รายการ JOB</div>
+ <div class="nav" onclick="showView('queue',this)"><span>☎</span>คิวโทรประเมิน</div>
+ <div class="nav" onclick="showView('report',this)"><span>★</span>ผลการประเมิน</div>
+ <div class="nav" onclick="showView('system',this)"><span>⚙</span>System Status</div>
+ <div class="nav"><span>▤</span>รายละเอียด JOB</div>
+ <div class="nav"><span>♟</span>พนักงาน (Employees)</div>
+ <div class="nav"><span>⌖</span>สถานี (Stations)</div>
+ <div class="nav"><span>◆</span>กลุ่มสถานี</div>
+ <div class="nav"><span>◇</span>ประเภทงาน</div>
+</aside>
+<main>
+<div id="view-dashboard" class="appview">
+<section class="panel search">
+<h2>ค้นหา JOB</h2>
+<div class="filters">
+ <div class="field"><label>วันที่ปิด JOB (จาก)</label><input id="closeFrom" type="date"></div>
+ <div class="field"><label>ถึง</label><input id="closeTo" type="date"></div>
+ <div class="field"><label>VAN / CS Station</label><select id="fVan" onchange="applyJobFilters()"><option>ทั้งหมด</option></select></div>
+ <div class="field"><label>กลุ่มสถานี</label><select id="fGroup" onchange="applyJobFilters()"><option>ทั้งหมด</option></select></div>
+ <div class="field"><label>สัญญา (Contract)</label><select id="fContract" disabled title="ไม่มีฟิลด์สัญญาในข้อมูลที่ตรวจสอบ"><option>ไม่มีข้อมูลสัญญา</option></select></div>
+ <div class="field"><label>ประเภทงาน (Work Type)</label><select id="fWork" onchange="applyJobFilters()"><option>ทั้งหมด</option></select></div>
+ <div class="field"><label>สถานี (Station)</label><select id="fStation" onchange="applyJobFilters()"><option>ทั้งหมด</option></select></div>
+ <div class="field"><label>ความปลอดภัย (Safety)</label><select id="fSafety" disabled title="ไม่มีฟิลด์ Safety ในข้อมูลที่ตรวจสอบ"><option>ไม่มีข้อมูล Safety</option></select></div>
+ <div class="actions"><button class="btn primary" onclick="loadJobsFromBridge()">⌕ ค้นหา</button><button class="btn secondary" onclick="resetFilter()">⟳ ล้างเงื่อนไข</button></div>
+</div>
+</section>
+
+<section class="cards">
+ <div class="card"><div class="ico">☷</div><div><div class="klabel">จำนวน JOB ทั้งหมด</div><div class="kvalue" id="total">-</div></div></div>
+ <div class="card"><div class="ico">✓</div><div><div class="klabel">ปิดงานแล้ว</div><div class="kvalue" id="closedCount">-</div></div></div>
+ <div class="card"><div class="ico">!</div><div><div class="klabel">งานค้าง</div><div class="kvalue" id="pendingCount" title="API นี้กรองตามวันที่ปิดงาน จึงไม่ครอบคลุมงานค้าง">ไม่มีข้อมูล</div></div></div>
+ <div class="card"><div class="ico">♟</div><div><div class="klabel">พนักงานที่เกี่ยวข้อง</div><div class="kvalue" id="employeeCount">-</div></div></div>
+ <div class="card"><div class="ico">⌖</div><div><div class="klabel">สถานีทั้งหมด</div><div class="kvalue" id="stationCount">-</div></div></div>
+</section>
+
+<section class="panel table-panel">
+ <div class="toolbar"><h2 class="table-title">☷ รายการ JOB</h2><div class="tools"><button class="btn excel" onclick="exportJobsCSV()">▣ Export CSV (Excel)</button><button class="btn print" onclick="print()">▣ พิมพ์</button></div></div>
+ <div style="overflow:auto"><table id="jobTable">
+ <thead><tr><th>#</th><th>JOB_ID</th><th>วันที่ปิดงาน</th><th>VANID</th><th>STA_ID</th><th>สถานี</th><th>ประเภทงาน</th><th>กลุ่มสถานี</th><th>ผู้รับผิดชอบ</th><th>รายละเอียดปัญหา</th><th>ผลการแก้ไข</th><th>สถานะ</th><th>ประเมิน</th></tr></thead>
+ <tbody></tbody></table></div>
+</section>
+
+<section class="charts">
+ <div class="panel chart"><h3>☷ สัดส่วนประเภทงาน</h3><div class="donut-wrap"><div class="donut" id="workDonut"></div><div class="legend" id="workLegend">รอข้อมูล SMS</div></div></div>
+ <div class="panel chart"><h3>↕ จำนวน JOB รายวัน (7 วันสุดท้ายของช่วงที่เลือก)</h3><div class="bars" id="dailyBars"></div></div>
+ <div class="panel chart"><h3>▥ TOP 5 สถานีที่มี JOB มากที่สุด</h3><div id="topStations">รอข้อมูล SMS</div></div>
+</section>
+</div>
+
+<section id="view-queue" class="appview" style="display:none">
+ <div class="panel search">
+  <div class="toolbar"><h2>☎ คิวโทรประเมินลูกค้า</h2><div class="tools"><button class="btn primary" onclick="syncSMS()">↻ Sync JOB จาก SMS</button></div></div>
+  <div class="filters">
+   <div class="field"><label>สถานะการโทร</label><select id="qStatus" onchange="renderQueue()"><option>ทั้งหมด</option><option>รอโทร</option><option>ติดต่อไม่ได้</option><option>นัดโทรใหม่</option><option>ประเมินสำเร็จ</option><option>ไม่ประสงค์ประเมิน</option></select></div>
+   <div class="field"><label>ทีมที่ประเมิน</label><select id="qTeam" onchange="renderQueue()"><option>ทั้งหมด</option><option>ช่าง</option><option>Call Center</option><option>ติดตั้ง</option></select></div>
+  </div>
+ </div>
+ <div class="cards">
+  <div class="card"><div class="ico">☎</div><div><div class="klabel">รอโทรประเมิน</div><div class="kvalue" id="qPending">0</div></div></div>
+  <div class="card"><div class="ico">↻</div><div><div class="klabel">นัดโทรใหม่</div><div class="kvalue" id="qRetry">0</div></div></div>
+  <div class="card"><div class="ico">✓</div><div><div class="klabel">ประเมินสำเร็จ</div><div class="kvalue" id="qDone">0</div></div></div>
+  <div class="card"><div class="ico">!</div><div><div class="klabel">Low Score Follow-up</div><div class="kvalue" id="qLow">0</div></div></div>
+  <div class="card"><div class="ico">%</div><div><div class="klabel">Completion</div><div class="kvalue" id="qRate">0%</div></div></div>
+ </div>
+ <div class="panel table-panel">
+  <h2 class="table-title">รายการสำหรับโทรประเมิน</h2>
+  <div style="overflow:auto"><table><thead><tr><th>JOB ID</th><th>สถานี</th><th>ประเภทงาน</th><th>ทีม</th><th>สถานะ</th><th>นัดโทร</th><th>คะแนน</th><th>ผู้ประเมิน</th><th>ดำเนินการ</th></tr></thead><tbody id="queueBody"></tbody></table></div>
+ </div>
+</section>
+
+<section id="view-report" class="appview" style="display:none">
+ <div class="panel search"><div class="toolbar"><h2>★ Management Satisfaction Report</h2><div class="tools"><button class="btn excel" onclick="exportSurveyCSV()">▣ Export CSV</button></div></div></div>
+ <div class="cards">
+  <div class="card"><div class="ico">★</div><div><div class="klabel">คะแนนเฉลี่ยรวม</div><div class="kvalue" id="rAvg">-</div></div></div>
+  <div class="card"><div class="ico">🔧</div><div><div class="klabel">ทีมช่าง</div><div class="kvalue" id="rTech">-</div></div></div>
+  <div class="card"><div class="ico">☎</div><div><div class="klabel">Call Center</div><div class="kvalue" id="rCall">-</div></div></div>
+  <div class="card"><div class="ico">⚙</div><div><div class="klabel">ทีมติดตั้ง</div><div class="kvalue" id="rInstall">-</div></div></div>
+  <div class="card"><div class="ico">!</div><div><div class="klabel">คะแนนต่ำ ≤ 2</div><div class="kvalue" id="rLow">0</div></div></div>
+ </div>
+ <div class="panel table-panel" id="v63Panel">
+  <div class="toolbar"><h2 class="table-title">★ Team Satisfaction KPI · เป้าหมาย &gt; 95%</h2><div class="tools"><button class="btn excel" onclick="exportTeamSummaryCSV()">▣ Export Team KPI CSV</button></div></div>
+  <div class="filters" style="margin:12px 0;display:flex;flex-wrap:wrap;gap:10px"><label>ตั้งแต่วันที่ <input type="date" id="v63From" onchange="renderReport()"></label><label>ถึงวันที่ <input type="date" id="v63To" onchange="renderReport()"></label><label>ทีม <select id="v63Team" onchange="renderReport()"><option value="ทั้งหมด">ทั้งหมด</option><option>ติดตั้ง</option><option>Call Center</option><option>Service</option><option>ทีมอื่น ๆ</option></select></label><button class="btn secondary" onclick="document.getElementById('v63From').value='';document.getElementById('v63To').value='';renderReport()">ล้างตัวกรอง</button></div>
+  <div id="v63TeamCards" class="v63-team-grid"></div>
+  <p style="font-size:12px;color:#64748b">จำนวนสถานี / JOB / ผู้ถูกประเมิน นับไม่ซ้ำจากรายการประเมินสำเร็จ · กรณีไม่มีข้อมูล SMS ของ JOB จะแสดงจำนวนที่ตรวจสอบได้เท่านั้น</p>
+  <h3 style="margin:20px 0 12px">Pie Chart — แยกคะแนนรายหัวข้อตามทีม</h3><p class="v63-note">VAN = Service หรือ ติดตั้ง (แยกด้วยทีมที่บันทึก) · CEN = Call Center · รายการที่ข้อมูลทีมขัดแย้งกับรหัสจะไม่นำมารวมคะแนน</p><div id="v63Pies"></div>
+  <h3 style="margin:20px 0 12px">อันดับผู้ถูกประเมิน (ตามคะแนนเฉลี่ย)</h3><div id="v63Ranking" style="overflow:auto"></div>
+  <h3 style="margin:20px 0 12px">ความคิดเห็นลูกค้า</h3><div id="v63Comments" style="overflow:auto"></div>
+  <details style="margin-top:22px"><summary style="cursor:pointer;font-weight:700">⚙ จัดการคำถามประเมินรายทีม (มีผลกับการประเมินใหม่เท่านั้น)</summary><div style="padding:12px 0"><label>ทีม <select id="v63QuestionTeam" onchange="renderQuestionEditor()"><option>Service</option><option>Call Center</option><option>ติดตั้ง</option><option>ทีมอื่น ๆ</option></select></label><p style="font-size:12px;color:#64748b">หนึ่งบรรทัดต่อหนึ่งคำถาม (1–20 ข้อ) · เก็บข้อความคำถามเดิมพร้อมคะแนนเมื่อบันทึก</p><textarea id="v63QuestionEditor" rows="6" style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:8px"></textarea><button class="btn primary" onclick="saveTeamQuestions()">บันทึกชุดคำถาม</button></div></details>
+ </div>
+ <div class="panel table-panel"><h2 class="table-title">ประวัติผลการประเมิน</h2><div style="overflow:auto"><table><thead><tr><th>วันที่บันทึก</th><th>JOB ID</th><th>รหัสสถานี</th><th>ชื่อสถานี</th><th>VAN / CS Station (ผู้ถูกประเมิน)</th><th>ทีม</th><th>ผลการติดต่อ</th><th>คะแนนเฉลี่ย</th><th>Comment ลูกค้า</th><th>ผู้ประเมิน</th><th>Follow-up</th></tr></thead><tbody id="reportBody"></tbody></table></div></div>
+</section>
+
+
+<section id="view-system" class="appview" style="display:none">
+ <div class="panel search">
+  <div class="toolbar"><h2>⚙ System Status & SMS Integration</h2>
+   <button class="btn primary" onclick="checkSystem()">↻ ตรวจสอบระบบ</button>
+  </div>
+  <p class="sub">ตรวจ Local Bridge, Survey Database และการเข้าถึง SMS WCF Service จากเครื่องนี้</p>
+ </div>
+ <div class="cards">
+  <div class="card"><div class="ico">⇄</div><div><div class="klabel">Local Bridge</div><div class="kvalue" id="stBridge">Checking</div><div class="sub" id="stBridgeD">127.0.0.1:18765</div></div></div>
+  <div class="card"><div class="ico">▣</div><div><div class="klabel">Survey Database</div><div class="kvalue" id="stDB">Checking</div><div class="sub" id="stDBD">SQLite</div></div></div>
+  <div class="card"><div class="ico">☁</div><div><div class="klabel">SMS Server</div><div class="kvalue" id="stSMS">Checking</div><div class="sub" id="stSMSD">WCF DISCO</div></div></div>
+  <div class="card"><div class="ico">☷</div><div><div class="klabel">CSS JOBDetail</div><div class="kvalue" id="stJobs">READY</div><div class="sub" id="stJobsD">GetVw_CSS_JOBDetail • Read-only</div></div></div>
+ </div>
+ <div class="panel table-panel">
+  <h2 class="table-title">Integration Diagnostic</h2>
+  <pre id="diagOut" style="white-space:pre-wrap;background:#0f263f;color:#d9eaff;padding:16px;border-radius:8px;min-height:180px">กด “ตรวจสอบระบบ” เพื่อเริ่มตรวจสอบ</pre>
+ </div>
+</section>
+
+<footer><span>Customer Satisfaction Survey (CSS) Dashboard &nbsp;|&nbsp; Data Adapter: SMS / SatisfactionDBDomainService</span><span>V4.5.0 • CSS JOBDetail Canonical Service Diagnostic</span></footer>
+</main></div>
+<script>
+async function filterJobs(){await loadJobsFromBridge()}
+function resetFilter(){
+ for(const id of ["fVan","fGroup","fWork","fStation"])document.getElementById(id).selectedIndex=0;
+ applyJobFilters();
+}
+
+
+// V3: reuse the same verified read-only endpoint for table and survey dialog.
+let surveyContextJob=null;
+const resolutionCache=new Map();
+function formatResolutionEndDate(value){
+ const s=String(value??"").trim();
+ if(!s)return {label:"ไม่ระบุวันที่",stamp:null};
+ const ms=s.match(/^\/Date\((-?\d+)(?:[+-]\d{4})?\)\/$/);
+ if(ms){const date=new Date(Number(ms[1]));if(!Number.isNaN(date.getTime())){
+  const f=new Intl.DateTimeFormat("th-TH-u-ca-buddhist",{timeZone:"Asia/Bangkok",day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit",hourCycle:"h23"});
+  return {label:f.format(date),stamp:date.getTime()};}}
+ const iso=s.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2})(?:\.\d+)?)?(Z|[+-]\d{2}:?\d{2})?$/);
+ if(iso){const [_,year,month,day,hour,minute,second,tz]=iso;
+  if(tz){const date=new Date(s);if(!Number.isNaN(date.getTime())){
+   const f=new Intl.DateTimeFormat("th-TH-u-ca-buddhist",{timeZone:"Asia/Bangkok",day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit",hourCycle:"h23"});
+   return {label:f.format(date),stamp:date.getTime()};}}
+  return {label:`${day}/${month}/${Number(year)+543} ${hour}:${minute}`,stamp:Date.UTC(Number(year),Number(month)-1,Number(day),Number(hour),Number(minute),Number(second||0))};}
+ return {label:s,stamp:null};
+}
+function renderResolutionDetails(container,details){
+ container.replaceChildren();
+ if(!Array.isArray(details)||!details.length){container.textContent="ไม่พบผลการแก้ไข";return;}
+ const sorted=details.map((detail,index)=>({detail,index,date:formatResolutionEndDate(detail.EndDate)}))
+  .sort((a,b)=>a.date.stamp===null&&b.date.stamp===null?a.index-b.index:
+   a.date.stamp===null?1:b.date.stamp===null?-1:a.date.stamp-b.date.stamp||a.index-b.index);
+ sorted.forEach(({detail,date},n)=>{
+  const item=document.createElement("div");item.className="resolution-entry";
+  const header=document.createElement("div");header.style.fontWeight="650";header.textContent=`${n+1}. ${date.label}`;
+  const body=document.createElement("div");body.style.whiteSpace="pre-wrap";body.textContent=String(detail.Resole_Detail||"(ไม่มีข้อความ)");
+  item.append(header,body);container.append(item);
+ });
+}
+async function fetchResolutionForJob(jobId){
+ if(resolutionCache.has(jobId))return resolutionCache.get(jobId);
+ const r=await fetch(`/api/resolution?job_id=${encodeURIComponent(jobId)}`,{cache:"no-store"});
+ const d=await r.json();
+ if(!r.ok||!d.ok||d.complete!==true||!Array.isArray(d.details))throw new Error(d.error||"ข้อมูลไม่ครบ");
+ resolutionCache.set(jobId,d.details);
+ return d.details;
+}
+async function loadSurveyResolution(jobId,target){
+ try{const details=await fetchResolutionForJob(jobId);
+  if(surveyContextJob!==jobId||!document.getElementById("surveyModal").classList.contains("show"))return;
+  renderResolutionDetails(target,details);
+  renderSurveyContacts(jobId,details);
+ }catch(e){if(surveyContextJob===jobId){target.textContent="ไม่สามารถโหลดผลการแก้ไข: "+e.message;}}
+}
+
+// V4: 3CX TEL routing copied from the working AMS dashboard.
+function cssExtractPhones(value){
+ // Strip AN/TW/BO reference IDs, including punctuation between fields.
+ const raw=String(value||'').replace(/\b(?:AN|TW|BO)\s*[:：=]\s*[0-9\s-]+/gi,' ');
+ if(!raw.trim()||raw.trim()==='—')return [];
+ // Match individual Thai numbers without consuming the next number after a separator.
+ const candidates=raw.match(/(?:\+66[\s.-]?|0)(?:\d[\s.-]?){8,9}(?!\d)/g)||[];
+ const seen=new Set(),result=[];
+ for(const candidate of candidates){
+  let digits=candidate.replace(/\D/g,'');
+  if(digits.startsWith('66')&&(digits.length===11||digits.length===12))digits='0'+digits.slice(2);
+  if(!/^0\d{8,9}$/.test(digits)||seen.has(digits))continue;
+  seen.add(digits);result.push(digits);
+ }
+ return result;
+}
+function cssField(row,name){const key=Object.keys(row||{}).find(k=>k.toLowerCase()===name.toLowerCase());return key?String(row[key]??'').trim():'';}
+function cssAppendContact(target,name,number){
+ const line=document.createElement('div');line.className='css-contact-line';
+ const label=document.createElement('span');label.textContent=name||'ไม่ระบุชื่อ';
+ const link=document.createElement('a');link.href='tel:'+number;link.textContent='☎ '+number;
+ link.title='โทรผ่าน 3CX ที่ตั้งเป็นแอป TEL ของ Windows';
+ line.append(label,link);target.append(line);
+}
+function cssIsAppointment(text){return /นัด|โทรกลับ|ติดต่อกลับ|appointment|callback|กำหนดโทร|โทรหาอีกครั้ง/i.test(String(text||''));}
+function cssResolutionChronological(details){
+ return (Array.isArray(details)?details:[]).map((detail,index)=>({detail,index,date:formatResolutionEndDate(detail.EndDate)}))
+  .sort((a,b)=>a.date.stamp===null&&b.date.stamp===null?a.index-b.index:
+   a.date.stamp===null?1:b.date.stamp===null?-1:a.date.stamp-b.date.stamp||a.index-b.index);
+}
+function renderSurveyContacts(jobId,details){
+ const sole=document.getElementById('mContacts'),resolved=document.getElementById('mResolvedPhones'),scheduled=document.getElementById('mAppointmentPhones');
+ [sole,resolved,scheduled].forEach(el=>el.replaceChildren());
+ const job=smsJobs.find(j=>jobKey(j)===jobId);
+ const seen=new Set();
+ const informer=cssField(job,'Informer'),phone=cssField(job,'Inphone'),tel=cssField(job,'Tel');
+ // Priority: Tel > InPhone > phone numbers embedded in Informer.
+ // AN/TW/BO reference identifiers are stripped before extracting phones.
+ const sources=[{value:tel,label:'Tel'},{value:phone,label:'InPhone'},{value:informer,label:'Informer'}];
+ for(const source of sources){
+  for(const n of cssExtractPhones(source.value)){
+   if(seen.has(n))continue;
+   seen.add(n);cssAppendContact(sole,(source.label==='Tel'?'Tel · ':source.label+' · ')+(informer||'ไม่ระบุชื่อ'),n);
+  }
+ }
+ if(!sole.children.length){
+  const available=job?Object.keys(job).filter(k=>/^(tel|inphone|informer)$/i.test(k)).join(', '):'';
+  sole.textContent='ไม่พบหมายเลขติดต่อในข้อมูล JOB ที่ API ส่งมา'+(available?' (ฟิลด์ที่พบ: '+available+')':' (ไม่พบฟิลด์ Tel/InPhone/Informer)');
+ }
+ // First classify each phone by its own line/context, not by the entire resolution entry.
+ // Otherwise one appointment keyword anywhere in a long entry incorrectly hides all
+ // resolution phone numbers from section 2.
+ const entries=cssResolutionChronological(details);
+ const ordinary=[],appointments=[];
+ for(const {detail,date} of entries){
+  const lines=String(detail.Resole_Detail||'').split(/\r?\n/);
+  for(const line of lines){
+   const numbers=cssExtractPhones(line);
+   if(!numbers.length)continue;
+   for(const n of numbers){
+    const entry={number:n,date};
+    (cssIsAppointment(line)?appointments:ordinary).push(entry);
+   }
+  }
+ }
+ const append=(items,target,source)=>{
+  let duplicates=0;
+  for(const {number,date} of items){
+   if(seen.has(number)){duplicates++;continue;}
+   seen.add(number);cssAppendContact(target,source+' · '+date.label,number);
+  }
+  if(!target.children.length)target.textContent=duplicates?'ไม่มีหมายเลขใหม่ (แสดงในช่องก่อนหน้าแล้ว)':'ไม่พบหมายเลขในข้อมูลส่วนนี้';
+ };
+ append(ordinary,resolved,'ผลการแก้ไข');
+ append(appointments,scheduled,'นัดหมาย');
+}
+let currentRow=null;
+// V6.1: modal is located AFTER the main script. Bind scores after DOM is ready.
+function initSurveyRatingButtons(){
+ document.querySelectorAll("#surveyModal .rating button").forEach(b=>{
+  b.type="button";
+  b.addEventListener("click",function(){
+   const group=this.closest(".rating");
+   group.querySelectorAll("button").forEach(x=>x.classList.remove("sel"));
+   this.classList.add("sel");group.dataset.score=this.textContent.trim();
+  });
+ });
+}
+if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",initSurveyRatingButtons);
+else initSurveyRatingButtons();
+function openSurvey(btn){
+ currentRow=btn.closest("tr"); const c=currentRow.cells;
+ document.getElementById("mJob").textContent=c[1].textContent;
+ document.getElementById("mStation").textContent=c[5].textContent;
+ document.getElementById("mWork").textContent=c[6].textContent;
+ document.getElementById("mEmp").textContent=c[8].textContent;
+ document.getElementById("mProblem").textContent=c[9].textContent.trim()||"ไม่ระบุรายละเอียดปัญหา";
+ const resolutionEl=document.getElementById("mResolution");
+ resolutionEl.textContent="กำลังโหลดผลการแก้ไขจาก SMS...";
+ const selectedJob=c[1].textContent.trim();
+ surveyContextJob=selectedJob;
+ renderSurveyContacts(selectedJob,[]);
+ renderSurveyQuestions();
+ document.getElementById("surveyModal").classList.add("show");
+ loadSurveyResolution(selectedJob,resolutionEl);
+}
+function closeSurvey(){surveyContextJob=null;document.getElementById("surveyModal").classList.remove("show")}
+const V63_TEAMS=["ติดตั้ง","Call Center","Service","ทีมอื่น ๆ"];
+const V63_DEFAULT=["ความพึงพอใจต่อการให้บริการ","ความรวดเร็วในการดำเนินงาน","การสื่อสารและการให้ข้อมูล","คุณภาพของการแก้ไข/บริการ"];
+let v63Questions=Object.fromEntries(V63_TEAMS.map(t=>[t,[...V63_DEFAULT]]));
+function v63Team(t){return ({"ช่าง":"Service","ทีมช่าง":"Service","ทีมติดตั้ง":"ติดตั้ง"})[t]|| (V63_TEAMS.includes(t)?t:"ทีมอื่น ๆ");}
+async function loadTeamQuestions(){try{const r=await fetch('/api/questions',{cache:'no-store'});if(!r.ok)throw Error('HTTP '+r.status);const j=await r.json();if(j.ok)v63Questions=j.questions;}catch(e){console.warn('Question settings unavailable',e);}renderQuestionEditor();renderSurveyQuestions();}
+function renderSurveyQuestions(){const target=document.getElementById('v63SurveyQuestions');if(!target)return;const t=v63Team(document.getElementById('surveyTeam').value);target.replaceChildren();(v63Questions[t]||V63_DEFAULT).forEach((q,i)=>{const wrap=document.createElement('div');wrap.className='question';const title=document.createElement('strong');title.textContent=(i+1)+'. '+q;const rating=document.createElement('div');rating.className='rating';rating.dataset.question=q;for(let s=1;s<=5;s++){const b=document.createElement('button');b.type='button';b.textContent=s;b.onclick=()=>{rating.querySelectorAll('button').forEach(x=>x.classList.remove('sel'));b.classList.add('sel');rating.dataset.score=s;};rating.appendChild(b)}wrap.append(title,rating);target.appendChild(wrap)});}
+function setTeam(btn,team){document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));btn.classList.add('active');document.getElementById('surveyTeam').value=team;renderSurveyQuestions();}
+function renderQuestionEditor(){const e=document.getElementById('v63QuestionEditor'),t=document.getElementById('v63QuestionTeam');if(e&&t)e.value=(v63Questions[t.value]||V63_DEFAULT).join('\n');}
+async function saveTeamQuestions(){const t=document.getElementById('v63QuestionTeam').value,questions=document.getElementById('v63QuestionEditor').value.split('\n').map(x=>x.trim()).filter(Boolean);if(!questions.length||questions.length>20){alert('กรุณากำหนดคำถาม 1–20 ข้อ');return;}try{const r=await fetch('/api/questions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({team:t,questions})});const j=await r.json();if(!r.ok||!j.ok)throw Error(j.error||'บันทึกไม่สำเร็จ');v63Questions[t]=questions;renderSurveyQuestions();alert('บันทึกชุดคำถามของทีม '+t+' แล้ว');}catch(e){alert('ไม่สามารถบันทึกคำถาม: '+e.message)}}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',loadTeamQuestions);else loadTeamQuestions();
+async function saveSurvey(){
+ const status=document.getElementById("callStatus").value;
+ const groups=[...document.querySelectorAll("#v63SurveyQuestions .rating")];
+ const answers=groups.filter(x=>Number(x.dataset.score)>0).map(x=>({question:x.dataset.question,score:Number(x.dataset.score)}));
+ const scores=answers.map(x=>x.score);
+ if(status==="ประเมินสำเร็จ" && scores.length!==groups.length){alert("กรุณาให้คะแนนครบทุกข้อ ("+groups.length+" ข้อ)");return}
+ const avg=scores.length?(scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(2):null;
+ const record={job_id:document.getElementById("mJob").textContent,team:document.getElementById("surveyTeam").value,status,
+ average:avg,comment:document.getElementById("comment").value,evaluator:document.getElementById("evaluator").value,
+ callback:document.getElementById("callback").value,saved_at:new Date().toISOString(),answers};
+ // V6: Persist to the existing local SQLite API, not browser-only storage.
+ try{
+  const response=await fetch("/api/surveys",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(record)});
+  const result=await response.json();
+  if(!response.ok||!result.ok)throw new Error(result.error||result.message||"HTTP "+response.status);
+  await loadSurveyRecords();
+ }catch(error){alert("บันทึกไม่สำเร็จ: "+error.message+"\nข้อมูลยังไม่ถูกยืนยันว่าบันทึก กรุณาลองใหม่");return;}
+ if(currentRow){const btn=currentRow.querySelector(".survey-btn");btn.textContent=status==="ประเมินสำเร็จ"?"✓ ประเมินแล้ว":"☎ "+status; if(status==="ประเมินสำเร็จ"){btn.style.background="#159b62"}}
+ renderQueue();
+ alert("บันทึกผลประเมินแล้ว | คะแนนเฉลี่ย: "+(avg??"ไม่ระบุ")+(avg!==null && Number(avg)<=2?" | LOW SCORE FOLLOW-UP":""));
+ closeSurvey();
+}
+
+const SMS_ADAPTER = {
+  mode: "GETJOBS_DIAGNOSTIC",
+  endpoint: "/CSS/Services/CustomerSatisfactionSurveyCSSrc-Web-ServicesMSDBDomainService.svc",
+  operation: "GetVw_CSS_JOBDetail",
+  async getJobs(){
+    const r=await fetch("/api/sms/jobdetail",{cache:"no-store"});
+    return await r.json();
+  }
+};
+
+function showView(name,el){
+ document.querySelectorAll(".appview").forEach(v=>v.style.display="none");
+ document.getElementById("view-"+name).style.display="";
+ document.querySelectorAll("aside .nav").forEach(n=>n.classList.remove("active"));
+ if(el) el.classList.add("active");
+ if(name==="queue") loadSurveyRecords().catch(e=>alert(e.message));
+ if(name==="report") {loadSurveyRecords().catch(e=>alert(e.message));loadTeamQuestions();}
+}
+function baseJobs(){
+ return [...document.querySelectorAll("#jobTable tbody tr")].filter(r=>r.cells.length>=12).map(r=>({
+  job_id:r.cells[1].textContent.trim(),station:r.cells[5].textContent.trim(),work:r.cells[6].textContent.trim(),
+  employee:r.cells[8].textContent.trim(),closed:r.cells[11].textContent.includes("ปิดแล้ว")
+ })).filter(x=>x.closed);
+}
+let serverSurveyRecords=[];
+function surveyRecords(){return serverSurveyRecords;}
+async function loadSurveyRecords(){
+ const response=await fetch("/api/surveys",{cache:"no-store"});
+ if(!response.ok)throw new Error("โหลดผลประเมิน HTTP "+response.status);
+ const result=await response.json();
+ if(!result.ok||!Array.isArray(result.surveys))throw new Error("ข้อมูลผลประเมินไม่ถูกต้อง");
+ serverSurveyRecords=result.surveys.slice().reverse();
+ renderQueue();
+ const report=document.getElementById("view-report");
+ if(report&&report.style.display!=="none")renderReport();
+}
+function latestByJob(){
+ const m={}; surveyRecords().forEach(x=>m[x.job_id]=x); return m;
+}
+function renderQueue(){
+ const jobs=baseJobs(), latest=latestByJob(), qs=document.getElementById("qStatus")?.value||"ทั้งหมด", qt=document.getElementById("qTeam")?.value||"ทั้งหมด";
+ let rows=jobs.map(j=>({ ...j, ...(latest[j.job_id]||{}), status:(latest[j.job_id]?.status||"รอโทร"), team:(latest[j.job_id]?.team||"-") }));
+ document.getElementById("qPending").textContent=rows.filter(x=>x.status==="รอโทร"||x.status==="ติดต่อไม่ได้").length;
+ document.getElementById("qRetry").textContent=rows.filter(x=>x.status==="นัดโทรใหม่").length;
+ document.getElementById("qDone").textContent=rows.filter(x=>x.status==="ประเมินสำเร็จ").length;
+ document.getElementById("qLow").textContent=rows.filter(x=>x.average!=null&&x.average!=="-"&&x.average!==""&&Number(x.average)<=2).length;
+ document.getElementById("qRate").textContent=(rows.length?100*rows.filter(x=>x.status==="ประเมินสำเร็จ").length/rows.length:0).toFixed(1)+"%";
+ rows=rows.filter(x=>(qs==="ทั้งหมด"||x.status===qs)&&(qt==="ทั้งหมด"||x.team===qt||x.team==="-"));
+  const queueBody=document.getElementById("queueBody");
+  queueBody.innerHTML=rows.map(x=>`<tr><td>${reportEsc(x.job_id)}</td><td>${reportEsc(x.station)}</td><td>${reportEsc(x.work)}</td><td>${reportEsc(x.team)}</td><td><span class="status ${x.status==="ประเมินสำเร็จ"?"done":"queue"}">${reportEsc(x.status)}</span></td><td>${reportEsc(x.callback||"-")}</td><td>${reportEsc(x.average??"-")}</td><td>${reportEsc(x.evaluator||"-")}</td><td><button class="survey-btn" data-job-id="${reportEsc(x.job_id)}">☎ เปิดประเมิน</button></td></tr>`).join("");
+  queueBody.querySelectorAll("button[data-job-id]").forEach(button=>button.addEventListener("click",()=>openSurveyByJob(button.dataset.jobId)));
+}
+function openSurveyByJob(id){
+ const row=[...document.querySelectorAll("#jobTable tbody tr")].find(r=>r.cells[1]?.textContent.trim()===id);
+ if(row){openSurvey(row.querySelector(".survey-btn"));}
+}
+function avgTeam(team){
+ const a=surveyRecords().filter(x=>x.status==="ประเมินสำเร็จ"&&x.team===team&&x.average!=="-").map(x=>Number(x.average));
+ return a.length?(a.reduce((p,c)=>p+c,0)/a.length).toFixed(2):"-";
+}
+function reportEsc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function reportJobInfo(jobId){
+ // Join report rows to the original SMS JOB data; do not depend on the survey API storing these fields.
+ const j=smsJobs.find(j=>jobKey(j)===String(jobId));
+ if(j)return {stationId:val(j,"STA_ID"),station:stationName(j),van:vanName(j)};
+ const row=[...document.querySelectorAll("#jobTable tbody tr")].find(r=>r.cells[1]?.textContent.trim()===String(jobId));
+ return row?{stationId:row.cells[4]?.textContent.trim()||"",station:row.cells[5]?.textContent.trim()||"",van:row.cells[3]?.textContent.trim()||""}:{stationId:"",station:"",van:""};
+}
+function reportField(value){return reportEsc(value||"-");}
+function renderReport(){
+ const a=surveyRecords(), scored=a.filter(x=>x.status==="ประเมินสำเร็จ"&&x.average!=="-");
+ document.getElementById("rAvg").textContent=scored.length?(scored.reduce((p,c)=>p+Number(c.average),0)/scored.length).toFixed(2):"-";
+ document.getElementById("rTech").textContent=avgTeam("ช่าง"); document.getElementById("rCall").textContent=avgTeam("Call Center"); document.getElementById("rInstall").textContent=avgTeam("ติดตั้ง");
+ document.getElementById("rLow").textContent=scored.filter(x=>Number(x.average)<=2).length;
+ renderV63Report();
+ document.getElementById("reportBody").innerHTML=a.slice().reverse().map(x=>`<tr><td>${new Date(x.saved_at).toLocaleString("th-TH")}</td><td>${reportEsc(x.job_id)}</td><td>${reportField(reportJobInfo(x.job_id).stationId)}</td><td>${reportField(reportJobInfo(x.job_id).station)}</td><td>${reportField(reportJobInfo(x.job_id).van)}</td><td>${reportEsc(x.team)}</td><td>${reportEsc(x.status)}</td><td>${reportEsc(x.average)}</td><td>${reportEsc(x.comment)}</td><td>${reportEsc(x.evaluator||"-")}</td><td>${x.average!=="-"&&Number(x.average)<=2?"⚠ ต้องติดตาม":"-"}</td></tr>`).join("");
+}
+
+function v64Assessed(x){return String(reportJobInfo(x.job_id).van||'').trim().toUpperCase();}
+function v64Team(x){
+ const code=v64Assessed(x),saved=v63Team(x.team);
+ if(/^CEN[\s_-]*[A-Z0-9]+/.test(code))return 'Call Center';
+ if(/^VAN[\s_-]*[A-Z0-9]+/.test(code))return saved==='ติดตั้ง'?'ติดตั้ง':'Service';
+ return saved;
+}
+function v63Rows(){let rows=surveyRecords().filter(x=>x.status==='ประเมินสำเร็จ'&&Number.isFinite(Number(x.average))&&x.average!==null&&x.average!=='');const f=document.getElementById('v63From')?.value,to=document.getElementById('v63To')?.value;if(f)rows=rows.filter(x=>String(x.saved_at||'').slice(0,10)>=f);if(to)rows=rows.filter(x=>String(x.saved_at||'').slice(0,10)<=to);return rows;}
+function v63Fmt(v){return Number(v).toFixed(2)+'%';}
+function v63Answers(x){try{const a=typeof x.answers_json==='string'?JSON.parse(x.answers_json):x.answers_json;return Array.isArray(a)?a:[];}catch{return [];}}
+function v63Table(rows,heads){const tr=rows.map(row=>'<tr>'+row.map(v=>'<td>'+reportEsc(v)+'</td>').join('')+'</tr>').join('');return '<table><thead><tr>'+heads.map(v=>'<th>'+reportEsc(v)+'</th>').join('')+'</tr></thead><tbody>'+tr+'</tbody></table>';}
+function renderV63Report(){const scored=v63Rows(),selected=document.getElementById('v63Team')?.value||'ทั้งหมด';const cards=document.getElementById('v63TeamCards'),pies=document.getElementById('v63Pies');if(!cards||!pies)return;
+ const groups=V63_TEAMS.map(team=>({team,rows:scored.filter(x=>v64Team(x)===team)}));
+ cards.innerHTML=groups.map(({team,rows})=>{const pct=rows.length?rows.reduce((a,x)=>a+Number(x.average)/5*100,0)/rows.length:null;const stations=new Set(rows.map(x=>reportJobInfo(x.job_id).stationId).filter(Boolean));const jobs=new Set(rows.map(x=>x.job_id).filter(Boolean));const people=new Set(rows.map(x=>reportJobInfo(x.job_id).van).filter(Boolean));const color=pct===null?'#718096':pct>95?'#15976a':'#dc6659';return `<div class="v63-team-card"><strong>${reportEsc(team)}</strong><div class="v63-pct" style="color:${color}">${pct===null?'—':v63Fmt(pct)}</div><div class="v63-note">${pct===null?'ยังไม่มีคะแนน':pct>95?'✓ ผ่าน KPI > 95%':'⚠ ไม่ผ่าน KPI > 95%'}</div><div class="v63-stats"><div><strong>${stations.size}</strong>สถานี*</div><div><strong>${jobs.size}</strong>JOB</div><div><strong>${people.size}</strong>ผู้ถูกประเมิน*</div></div></div>`}).join('');
+ const shown=groups.filter(g=>selected==='ทั้งหมด'||g.team===selected);let pieHtml='';
+ for(const {team,rows} of shown){
+  const per=new Map();
+  for(const x of rows){for(const a of v63Answers(x)){
+   if(!a.question||!(Number(a.score)>=1&&Number(a.score)<=5))continue;
+   const k=a.question,old=per.get(k)||{sum:0,n:0};old.sum+=Number(a.score);old.n++;per.set(k,old);
+  }}
+  let inner='';
+  if(!per.size){inner='<div class="v64-empty">ยังไม่มีคะแนนรายหัวข้อของทีมนี้ในช่วงที่เลือก (คะแนนเดิมจาก V6.2 ไม่สามารถแจกแจงรายข้อได้)</div>';}
+  else{inner='<div class="v63-pie-grid">';for(const [question,v] of per){
+   const pct=v.sum/(v.n*5)*100,ok=pct>95,color=ok?'#15976a':'#dc6659';
+   inner+=`<div class="v63-pie-card"><strong>${reportEsc(question)}</strong><div class="v63-pie" style="background:conic-gradient(${color} ${pct}%,#e9edf2 ${pct}% 100%)"><span>${v63Fmt(pct)}</span></div><p class="v63-note">${ok?'✓ ผ่าน':'⚠ ไม่ผ่าน'} · ${v.n} คำตอบ · KPI &gt;95%</p></div>`;
+  }inner+='</div>';}
+  pieHtml+=`<section class="v64-section"><h3>${reportEsc(team)}</h3><p class="v64-subtitle">${rows.length} รายการประเมินสำเร็จ · ${per.size} หัวข้อที่มีคะแนน</p>${inner}</section>`;
+ }
+ pies.innerHTML=pieHtml;
+ const rr=scored.filter(x=>selected==='ทั้งหมด'||v64Team(x)===selected);const byPerson=new Map();for(const x of rr){const info=reportJobInfo(x.job_id),id=info.van;if(!id)continue;const k=v64Team(x)+'|'+id;const obj=byPerson.get(k)||{team:v64Team(x),id,sum:0,n:0,jobs:new Set()};obj.sum+=Number(x.average);obj.n++;obj.jobs.add(x.job_id);byPerson.set(k,obj);}const ranked=[...byPerson.values()].map(v=>({...v,pct:v.sum/v.n/5*100}));const highest=[...ranked].sort((a,b)=>b.pct-a.pct||b.jobs.size-a.jobs.size).slice(0,5),lowest=[...ranked].sort((a,b)=>a.pct-b.pct||b.jobs.size-a.jobs.size).slice(0,5);document.getElementById('v63Ranking').innerHTML=ranked.length?'<h4>คะแนนสูงสุด TOP 5</h4>'+v63Table(highest.map(x=>[x.team,x.id,v63Fmt(x.pct),x.jobs.size]),['ทีม','VAN / CS Station','คะแนน','JOB'])+'<h4>คะแนนต่ำสุด BOTTOM 5</h4>'+v63Table(lowest.map(x=>[x.team,x.id,v63Fmt(x.pct),x.jobs.size]),['ทีม','VAN / CS Station','คะแนน','JOB']):'<p class="v63-note">ไม่พบผู้ถูกประเมินที่ระบุรหัสในข้อมูล JOB ที่โหลดอยู่</p>';
+ const comments=rr.filter(x=>String(x.comment||'').trim());document.getElementById('v63Comments').innerHTML=comments.length?v63Table(comments.slice().reverse().map(x=>[v64Team(x),x.job_id,reportJobInfo(x.job_id).van||'-',v63Fmt(Number(x.average)/5*100),x.comment]),['ทีม','JOB','ผู้ถูกประเมิน','คะแนน','ความคิดเห็นลูกค้า']):'<p class="v63-note">ไม่มีความคิดเห็นลูกค้าในช่วงที่เลือก</p>';
+}
+function exportTeamSummaryCSV(){const rows=[['team','job_id','station_id','station_name','van_cs_station','percent','question','question_percent','comment']];for(const x of v63Rows()){if(document.getElementById('v63Team').value!=='ทั้งหมด'&&v64Team(x)!==document.getElementById('v63Team').value)continue;const info=reportJobInfo(x.job_id),answers=v63Answers(x);if(!answers.length)rows.push([v64Team(x),x.job_id,info.stationId,info.station,info.van,Number(x.average)/5*100,'','',x.comment]);else for(const a of answers)rows.push([v64Team(x),x.job_id,info.stationId,info.station,info.van,Number(x.average)/5*100,a.question,Number(a.score)/5*100,x.comment]);}const csv='\ufeff'+rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');const blob=new Blob([csv],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='CSS_Team_KPI_V63.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+async function syncSMS(){await loadJobsFromBridge()}
+function exportSurveyCSV(){
+ const rows=[["saved_at","job_id","station_id","station_name","van_cs_station","team","status","average","comment","evaluator","callback"],...surveyRecords().map(x=>{const info=reportJobInfo(x.job_id);return [x.saved_at,x.job_id,info.stationId,info.station,info.van,x.team,x.status,x.average,x.comment,x.evaluator,x.callback]})];
+ const csv="\ufeff"+rows.map(r=>r.map(v=>`"${String(v??"").replace(/"/g,'""')}"`).join(",")).join("\r\n");
+ const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));a.download="CSS_Survey_Report.csv";a.click();URL.revokeObjectURL(a.href);
+}
+
+
+
+(function initLiveDates(){
+ const t=new Date(), f=new Date(t); f.setDate(t.getDate()-7);
+ const iso=d=>{const z=n=>String(n).padStart(2,"0");return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}`};
+ const a=document.getElementById("closeFrom"),b=document.getElementById("closeTo"); if(a&&!a.value)a.value=iso(f); if(b&&!b.value)b.value=iso(t);
+})();
+
+// Single source of truth: completed JOB details from /api/jobs.
+let smsJobs=[], visibleJobs=[];
+const htmlSafe=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
+const val=(j,...keys)=>{for(const k of keys){if(j[k]!==undefined&&j[k]!==null&&String(j[k]).trim()!=="")return String(j[k])}return ""};
+const numberTH=n=>n.toLocaleString("th-TH");
+const jobKey=j=>val(j,"JOB_ID");
+const stationName=j=>val(j,"StationSys","Station");
+const vanName=j=>val(j,"EMP_ID3","VANID");
+const groupName=j=>val(j,"GOP_ID","GroupStation");
+const workName=j=>val(j,"WorkType","TYP_ID1");
+function fillJobSelect(id,values){
+ const el=document.getElementById(id),old=el.value;
+ const items=[...new Set(values.filter(Boolean))].sort((a,b)=>a.localeCompare(b,"th",{numeric:true}));
+ el.replaceChildren(new Option("ทั้งหมด",""),...items.map(v=>new Option(v,v)));
+ el.value=items.includes(old)?old:"";
+}
+function renderJobCharts(jobs){
+ const counts=new Map(); for(const j of jobs){const k=workName(j)||"ไม่ระบุ";counts.set(k,(counts.get(k)||0)+1)}
+ const ranked=[...counts].sort((a,b)=>b[1]-a[1]);
+ const colors=["#2b7de0","#40b879","#ef9d46","#9476d4","#9aaabd"];
+ const donut=document.getElementById("workDonut"),legend=document.getElementById("workLegend");
+ if(!jobs.length){donut.style.background="#e5ebf2";legend.textContent="ไม่มีข้อมูล"}
+ else{
+   const groups=ranked.length>5?[...ranked.slice(0,4),["อื่น ๆ",ranked.slice(4).reduce((a,x)=>a+x[1],0)]]:ranked;
+   let start=0;
+   donut.style.background="conic-gradient("+groups.map(([k,n],i)=>{const a=start;start+=100*n/jobs.length;return `${colors[i]} ${a}% ${start}%`}).join(",")+")";
+   legend.replaceChildren(...groups.map(([k,n],i)=>{const d=document.createElement("div");d.textContent=`● ${k}: ${numberTH(n)} (${(100*n/jobs.length).toFixed(1)}%)`;d.style.color=colors[i];return d}));
+ }
+ const daily=new Map();for(const j of jobs){const d=val(j,"CloseDate").slice(0,10);if(d)daily.set(d,(daily.get(d)||0)+1)}
+ const endDate=document.getElementById("closeTo").value;
+ const end=endDate?new Date(endDate+"T12:00:00"):new Date();
+ const days=Array.from({length:7},(_,i)=>{const d=new Date(end);d.setDate(d.getDate()-(6-i));const iso=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;return [iso,daily.get(iso)||0]});
+ const max=Math.max(1,...days.map(x=>x[1]));
+ document.getElementById("dailyBars").replaceChildren(...days.map(([day,n])=>{const b=document.createElement("div");b.className="bar";b.style.height=Math.max(2,n/max*100)+"%";b.title=`${day}: ${numberTH(n)} JOB`;const label=document.createElement("small");label.textContent=day.slice(8)+"/"+day.slice(5,7);b.append(label);return b}));
+ const stations=new Map();for(const j of jobs){const id=val(j,"STA_ID");if(!id)continue;const x=stations.get(id)||{name:stationName(j)||id,n:0};x.n++;stations.set(id,x)}
+ const top=[...stations].sort((a,b)=>b[1].n-a[1].n).slice(0,5);const topEl=document.getElementById("topStations");topEl.replaceChildren();
+ for(const [id,x] of top){const row=document.createElement("div");row.className="hbar-row";row.style.gridTemplateColumns="minmax(90px,1.5fr) 1fr 45px";const name=document.createElement("span");name.textContent=x.name;name.title=id;name.style.overflow="hidden";name.style.textOverflow="ellipsis";name.style.whiteSpace="nowrap";const bar=document.createElement("div");bar.className="hbar";bar.style.width=(100*x.n/top[0][1].n)+"%";const count=document.createElement("b");count.textContent=numberTH(x.n);row.append(name,bar,count);topEl.append(row)}
+ if(!top.length)topEl.textContent="ไม่มีข้อมูล";
+}
+function applyJobFilters(){
+ const selected=id=>document.getElementById(id).value;
+ visibleJobs=smsJobs.filter(j=>(!selected("fVan")||vanName(j)===selected("fVan"))&&(!selected("fGroup")||groupName(j)===selected("fGroup"))&&(!selected("fWork")||workName(j)===selected("fWork"))&&(!selected("fStation")||val(j,"STA_ID")===selected("fStation")));
+ const tbody=document.querySelector("#jobTable tbody"),fragment=document.createDocumentFragment(),latest=latestByJob();
+ for(let i=0;i<visibleJobs.length;i++){
+   const j=visibleJobs[i],id=jobKey(j),tr=document.createElement("tr");
+   const cells=[i+1,id,val(j,"CloseDate"),vanName(j),val(j,"STA_ID"),stationName(j),workName(j),groupName(j),val(j,"Employee","EMP_ID3"),val(j,"JobFailure_Detail","Problem_Detail"),val(j,"Resolve_Detail")||"ไม่พบข้อมูล"];
+   for(let ci=0;ci<cells.length;ci++){
+     const td=document.createElement("td");
+     if(ci===10){
+       const btn=document.createElement("button");btn.type="button";btn.textContent="ดูผลการแก้ไข";
+       btn.addEventListener("click",async()=>{
+         btn.disabled=true;btn.textContent="กำลังโหลด...";
+         try{
+           const details=await fetchResolutionForJob(id);
+           renderResolutionDetails(td,details);
+         }catch(e){btn.disabled=false;btn.textContent="ลองใหม่";alert("โหลดผลการแก้ไขไม่สำเร็จ: "+e.message)}
+       });
+       td.append(btn);
+     }else td.textContent=cells[ci];
+     tr.append(td);
+   }
+   const state=document.createElement("td");const badge=document.createElement("span");badge.className="status done";badge.textContent="ปิดแล้ว";state.append(badge);tr.append(state);
+   const action=document.createElement("td"),button=document.createElement("button");button.className="survey-btn";const survey=latest[id];button.textContent=survey?(survey.status==="ประเมินสำเร็จ"?"✓ ประเมินแล้ว":"☎ "+survey.status):"☎ โทรประเมิน";if(survey?.status==="ประเมินสำเร็จ")button.style.background="#159b62";button.addEventListener("click",()=>openSurvey(button));action.append(button);tr.append(action);fragment.append(tr);
+ }
+ tbody.replaceChildren(fragment);
+ document.getElementById("total").textContent=numberTH(visibleJobs.length);
+ document.getElementById("closedCount").textContent=numberTH(visibleJobs.filter(j=>!!val(j,"CloseDate")).length);
+ document.getElementById("pendingCount").textContent="ไม่มีข้อมูล";
+ document.getElementById("employeeCount").textContent=numberTH(new Set(visibleJobs.map(vanName).filter(Boolean)).size);
+ document.getElementById("stationCount").textContent=numberTH(new Set(visibleJobs.map(j=>val(j,"STA_ID")).filter(Boolean)).size);
+ renderJobCharts(visibleJobs);renderQueue();
+}
+async function loadJobsFromBridge(){
+ const b=document.getElementById("bridgeState");
+ try{
+   const df=document.getElementById("closeFrom").value,dt=document.getElementById("closeTo").value;
+   if(!df||!dt||df>dt)throw new Error("กรุณาระบุช่วงวันที่ปิด JOB ให้ถูกต้อง");
+   b.textContent=window.__cssCloudMode?"LOADING CLOUD":"LOADING SMS";b.style.background="#e88728";
+   const r=await fetch(`/api/jobs?from=${encodeURIComponent(df)}&to=${encodeURIComponent(dt)}`,{cache:"no-store"});
+   if(!r.ok)throw new Error("HTTP "+r.status);
+   const data=await r.json();
+   if(!data.ok||data.complete!==true||!Array.isArray(data.jobs))throw new Error(data.error||"SMS ส่งข้อมูลไม่ครบ (complete != true)");
+   smsJobs=data.jobs;
+   fillJobSelect("fVan",smsJobs.map(vanName));fillJobSelect("fGroup",smsJobs.map(groupName));fillJobSelect("fWork",smsJobs.map(workName));fillJobSelect("fStation",smsJobs.map(j=>val(j,"STA_ID")));
+   applyJobFilters();
+   b.textContent=data.source==="supabase"?"CLOUD LIVE":data.source==="sms_live"?"SMS LIVE":"LOCAL BRIDGE";b.style.background=data.source==="supabase"||data.source==="sms_live"?"#159b62":"#e88728";
+ }catch(e){b.textContent="LOAD FAILED";b.style.background="#d84b4b";alert("ไม่สามารถโหลด JOB: "+e.message+"\nข้อมูลเดิมที่โหลดสำเร็จยังคงแสดงอยู่");}
+}
+function exportJobsCSV(){
+ const headers=["JOB_ID","CloseDate","EMP_ID3","STA_ID","StationSys","WorkType","GOP_ID","Employee","JobFailure_Detail","Resolve_Detail"];
+ const rows=[headers,...visibleJobs.map(j=>[jobKey(j),val(j,"CloseDate"),vanName(j),val(j,"STA_ID"),stationName(j),workName(j),groupName(j),val(j,"Employee","EMP_ID3"),val(j,"JobFailure_Detail","Problem_Detail"),val(j,"Resolve_Detail")])];
+ const csv="\ufeff"+rows.map(r=>r.map(v=>'"'+String(v??"").replace(/"/g,'""')+'"').join(",")).join("\r\n");
+ const a=document.createElement("a"),url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));a.href=url;a.download="CSS_Jobs_"+document.getElementById("closeFrom").value+"_"+document.getElementById("closeTo").value+".csv";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+window.addEventListener("DOMContentLoaded",()=>{
+ const team=document.getElementById("qTeam");if(team)team.value="ทั้งหมด";
+ loadJobsFromBridge();
+ loadSurveyRecords().catch(e=>console.error("Survey database:",e));
+});
+
+
+// Cloud mode retains the original diagnostic layout without attempting inaccessible localhost SMS services.
+async async function checkCloudSystem(){
+ const out=document.getElementById("diagOut");out.textContent="Checking Supabase Cloud...\\n";
+ const set=(id,value,detail)=>{const el=document.getElementById(id);if(el)el.textContent=value;const d=document.getElementById(id+"D");if(d&&detail)d.textContent=detail};
+ try{
+   const [status,surveys]=await Promise.all([fetch("/api/status"),fetch("/api/surveys")]);
+   const st=await status.json(),sv=await surveys.json();
+   set("stBridge",st.ok?"ONLINE":"ERROR","Supabase Cloud");
+   set("stDB",sv.ok?"ONLINE":"ERROR",sv.ok?sv.surveys.length+" records":sv.error);
+   set("stSMS","NOT CONNECTED","SMS live data requires a hosted secure integration");
+   set("stJobs",smsJobs.length+" JOB","Cloud records in selected date range");
+   out.textContent="Cloud: "+JSON.stringify(st,null,2)+"\\nSurvey DB: "+(sv.ok?sv.surveys.length+" records":sv.error)+"\\nSMS live: not connected; showing imported JOB data only";
+ }catch(e){out.textContent="Cloud diagnostic error: "+e.message;set("stBridge","ERROR",e.message)}
+}
+async function checkSystem(){
+ if(window.__cssCloudMode)return checkCloudSystem();
+ const out=document.getElementById("diagOut"); out.textContent="Checking...\n";
+ const set=(id,val,detail)=>{document.getElementById(id).textContent=val;if(detail)document.getElementById(id+"D").textContent=detail};
+ try{
+   const r=await fetch("/api/status",{cache:"no-store"}), j=await r.json();
+   if(j.ok && (j.token==="CSS-FINAL-18765"||j.token==="CSS-CLOUD")) set("stBridge","ONLINE",j.token==="CSS-CLOUD"?"Supabase Cloud":"FINAL • PID "+j.pid);
+   else set("stBridge","WRONG SERVICE",JSON.stringify(j));
+   out.textContent+="[Bridge] "+JSON.stringify(j,null,2)+"\n\n";
+ }catch(e){set("stBridge","OFFLINE",e.message);out.textContent+="[Bridge ERROR] "+e.message+"\n\n"}
+ try{
+   const r=await fetch("/api/surveys",{cache:"no-store"}), j=await r.json();
+   set("stDB",r.ok?"ONLINE":"ERROR",(j.surveys||[]).length+" records");
+   out.textContent+="[Database] HTTP "+r.status+" • "+(j.surveys||[]).length+" records\n\n";
+ }catch(e){set("stDB","OFFLINE",e.message);out.textContent+="[Database ERROR] "+e.message+"\n\n"}
+ try{
+   const r=await fetch("/api/sms/disco",{cache:"no-store"}), j=await r.json();
+   set("stSMS",j.ok?"ONLINE":"OFFLINE",j.ok?"HTTP "+j.http_status:j.error);
+   out.textContent+="[SMS DISCO] "+JSON.stringify(j,null,2)+"\n\n";
+ }catch(e){set("stSMS","OFFLINE",e.message);out.textContent+="[SMS ERROR] "+e.message+"\n\n"}
+ try{
+   const r=await fetch("/api/sms/jobdetail",{cache:"no-store"}), j=await r.json();
+   set("stJobs",j.ok?"RESPONDED":"CHECK",
+      j.ok?("HTTP "+j.http_status+" • "+(j.content_type||"unknown content-type")):
+           (j.error||("HTTP "+(j.http_status||"-")+" • "+(j.reason||"no response"))));
+   out.textContent+="[CSS JOBDetail] "+JSON.stringify(j,null,2);
+ }catch(e){set("stJobs","ERROR",e.message);out.textContent+="[GetJOBs ERROR] "+e.message}
+}
+
+</script>
+
+<div class="modal" id="surveyModal">
+ <div class="dialog">
+  <div class="dialog-head"><div><h2>☎ Customer Satisfaction Survey</h2><small>บันทึกผลการโทรประเมินจาก JOB</small></div><button class="close" onclick="closeSurvey()">×</button></div>
+  <div class="dialog-body">
+   <div class="job-summary">
+    <div><b>JOB ID</b><span id="mJob">-</span></div><div><b>สถานี</b><span id="mStation">-</span></div>
+    <div><b>ประเภทงาน</b><span id="mWork">-</span></div><div><b>ผู้รับผิดชอบ</b><span id="mEmp">-</span></div>
+   </div>
+   <section class="survey-context" aria-label="ข้อมูลประกอบการโทรประเมิน">
+    <div class="survey-context-card"><h3>รายละเอียดปัญหา</h3><div id="mProblem" class="survey-context-text">-</div></div>
+    <div class="survey-context-card"><h3>ผลการแก้ไข <span class="survey-context-note">(เรียงตาม EndDate)</span></h3><div id="mResolution" class="survey-context-text" aria-live="polite">กดโทรประเมินเพื่อโหลดข้อมูล</div></div>
+   </section>
+   <section class="css-3cx-grid css-3cx-three" aria-label="หมายเลขโทรศัพท์ไม่ซ้ำ แยกตามแหล่งข้อมูล">
+    <div class="survey-context-card"><h3>☎ 1. ข้อมูลติดต่อ SMS (Tel → InPhone → Informer)</h3><div id="mContacts" class="survey-context-text">กำลังตรวจสอบ...</div></div>
+    <div class="survey-context-card"><h3>☎ 2. จากผลการแก้ไข</h3><div id="mResolvedPhones" class="survey-context-text">กำลังตรวจสอบ...</div></div>
+    <div class="survey-context-card"><h3>☎ 3. จากนัดหมาย</h3><div id="mAppointmentPhones" class="survey-context-text">กำลังตรวจสอบ...</div></div>
+   </section>
+   <div class="survey-tabs">
+    <button class="tab active" onclick="setTeam(this,'ช่าง')">🔧 ทีมช่าง</button>
+    <button class="tab" onclick="setTeam(this,'Call Center')">☎ Call Center</button>
+    <button class="tab" onclick="setTeam(this,'ติดตั้ง')">⚙ ทีมติดตั้ง</button>
+    <button class="tab" onclick="setTeam(this,'ทีมอื่น ๆ')">◈ ทีมอื่น ๆ</button>
+   </div>
+   <input type="hidden" id="surveyTeam" value="ช่าง">
+   <div id="v63SurveyQuestions"></div>
+   <label style="font-size:12px;font-weight:650">ความคิดเห็นลูกค้า<textarea id="comment" class="comment" placeholder="บันทึก Comment จากลูกค้า"></textarea></label>
+   <div class="form-grid">
+    <label>ผลการติดต่อ<select id="callStatus"><option>ประเมินสำเร็จ</option><option>ติดต่อไม่ได้</option><option>นัดโทรใหม่</option><option>ไม่ประสงค์ประเมิน</option></select></label>
+    <label>ผู้ประเมิน<input id="evaluator" value="Admin"></label>
+    <label>วันที่/เวลานัดโทรใหม่<input id="callback" type="datetime-local"></label>
+    <label>ช่องทาง<input value="โทรศัพท์" readonly></label>
+   </div>
+  </div>
+  <div class="dialog-foot"><span class="danger-note">คะแนนเฉลี่ย ≤ 2 จะถูกจัดเป็น Low Score Follow-up</span><div><button class="btn secondary" onclick="closeSurvey()">ยกเลิก</button> <button class="btn primary" onclick="saveSurvey()">✓ บันทึกผลประเมิน</button></div></div>
+ </div>
+</div>
+
+
+<script>
+(function dashboardLiveClock(){
+  const monthsTH=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน",
+                  "กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
+  function render(){
+    const d=new Date(), z=n=>String(n).padStart(2,"0");
+    const el=document.getElementById("dashboardNow");
+    if(el) el.textContent=`${d.getDate()} ${monthsTH[d.getMonth()]} ${d.getFullYear()} ${z(d.getHours())}:${z(d.getMinutes())}`;
+  }
+  render();
+  setInterval(render,30000);
+})();
+</script>
+
+</body></html>
