@@ -101,7 +101,7 @@ footer{font-size:11px;color:#6b7f99;display:flex;justify-content:space-between;m
  window.__cssCloudMode=true;
  let ready=false;
  const respond=(obj,status=200)=>new Response(JSON.stringify(obj),{status,headers:{'Content-Type':'application/json'}});
- const authSession=async()=>{const {data,error}=await supa.auth.getSession();if(error||!data.session?.access_token)throw Error('Session expired');return data.session;};
+ const authSession=async()=>{const {data,error}=await supa.auth.getUser();if(error||!data?.user)throw Error('Session expired');const {data:sessionData,error:sessionError}=await supa.auth.getSession();if(sessionError||!sessionData.session?.access_token)throw Error('Session expired');return sessionData.session;};
  const overlay=document.createElement('div');overlay.id='cssCloudGate';overlay.style.cssText='position:fixed;z-index:99999;inset:0;background:#f2f6fb;display:flex;align-items:center;justify-content:center;font:15px Segoe UI,sans-serif';
  overlay.innerHTML='<div style="background:white;padding:30px;border-radius:12px;box-shadow:0 6px 30px #0002;width:380px;max-width:95vw"><h2 style="margin:0 0 16px">CSS V6.5 — Cloud Login</h2><p>เข้าสู่ระบบด้วยบัญชี Supabase ที่ได้รับอนุมัติ</p><form id="cloudLogin"><input id="cloudEmail" type="email" placeholder="Email" required style="width:100%;padding:10px;margin-bottom:10px"><input id="cloudPassword" type="password" placeholder="Password" required style="width:100%;padding:10px;margin-bottom:10px"><button style="padding:10px;width:100%;background:#2175d4;color:white;border:0">เข้าสู่ระบบ</button></form><p id="cloudError" role="alert" style="color:#b91c1c"></p></div>';
  document.addEventListener('DOMContentLoaded',()=>{document.body.append(overlay);document.getElementById('cloudLogin').onsubmit=async e=>{e.preventDefault();try{const {error}=await supa.auth.signInWithPassword({email:document.getElementById('cloudEmail').value,password:document.getElementById('cloudPassword').value});if(error)throw error;await check();}catch(x){document.getElementById('cloudError').textContent=x.message}};check().catch(()=>{});});
@@ -109,7 +109,7 @@ footer{font-size:11px;color:#6b7f99;display:flex;justify-content:space-between;m
  window.fetch=async function(input,options){
    const raw=typeof input==='string'?input:input?.url||'';
    if(!raw.startsWith('/api/'))return realFetch(input,options);
-   if(!ready)return new Response(JSON.stringify({ok:false,error:'Login required'}),{status:401,headers:{'Content-Type':'application/json'}});
+   if(!ready){overlay.isConnected||document.body.append(overlay);return respond({ok:false,error:'Login required'},401);}
    const path=new URL(raw,location.origin),method=(options?.method||'GET').toUpperCase();
    if(method==='POST' && path.pathname==='/api/surveys'){
      try{
@@ -136,7 +136,7 @@ footer{font-size:11px;color:#6b7f99;display:flex;justify-content:space-between;m
      const cloudJobs=[];
      for(let offset=0;offset<100000;offset+=1000){
        const {data,error}=await supa.from('css_jobs').select('job_data').order('job_id',{ascending:true}).range(offset,offset+999);
-       if(error)return respond({ok:false,error:error.message},502);
+       if(error)return respond({ok:false,error:error.message},error.code==='PGRST301'?401:502);
        cloudJobs.push(...(data||[]));
        if(!data||data.length<1000)break;
      }
@@ -697,7 +697,7 @@ async function loadJobsFromBridge(){
    if(!df||!dt||df>dt)throw new Error("กรุณาระบุช่วงวันที่ปิด JOB ให้ถูกต้อง");
    b.textContent=window.__cssCloudMode?"LOADING CLOUD":"LOADING SMS";b.style.background="#e88728";
    const r=await fetch(`/api/jobs?from=${encodeURIComponent(df)}&to=${encodeURIComponent(dt)}`,{cache:"no-store"});
-   if(!r.ok)throw new Error("HTTP "+r.status);
+   if(!r.ok){if(r.status===401&&window.__cssCloudMode){document.getElementById("bridgeState").textContent="LOGIN REQUIRED";throw new Error("เซสชัน Supabase หมดอายุ กรุณาเข้าสู่ระบบ Cloud อีกครั้ง");}throw new Error("HTTP "+r.status);}
    const data=await r.json();
    if(!data.ok||data.complete!==true||!Array.isArray(data.jobs))throw new Error(data.error||"SMS ส่งข้อมูลไม่ครบ (complete != true)");
    smsJobs=data.jobs;
