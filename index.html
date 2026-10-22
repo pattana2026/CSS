@@ -594,7 +594,15 @@ function renderV63Report(){const scored=v63Rows(),selected=document.getElementBy
    const k=a.question,old=per.get(k)||{sum:0,n:0};old.sum+=Number(a.score);old.n++;per.set(k,old);
   }}
   let inner='';
-  if(!per.size){inner='<div class="v64-empty">ยังไม่มีคะแนนรายหัวข้อของทีมนี้ในช่วงที่เลือก (คะแนนเดิมจาก V6.2 ไม่สามารถแจกแจงรายข้อได้)</div>';}
+  if(!per.size){
+   const valid=rows.filter(x=>Number.isFinite(Number(x.average))&&Number(x.average)>=0&&Number(x.average)<=5);
+   if(valid.length){
+    const avg=valid.reduce((sum,x)=>sum+Number(x.average),0)/valid.length;
+    const pct=Math.max(0,Math.min(100,avg/5*100));
+    const ok=pct>95,color=ok?'#15976a':'#dc6659';
+    inner='<div class="v63-pie-grid"><div class="v63-pie-card"><strong>คะแนนเฉลี่ยรวมของทีม</strong><div class="v63-pie" style="background:conic-gradient('+color+' '+pct+'%,#e9edf2 '+pct+'% 100%)"><span>'+v63Fmt(pct)+'</span></div><p class="v63-note">'+valid.length+' รายการประเมิน · '+(ok?'✓ ผ่าน':'⚠ ไม่ผ่าน')+' KPI &gt;95%</p></div></div><p class="v63-note" style="margin-top:12px">กราฟนี้แสดงคะแนนเฉลี่ยรวม ไม่ใช่คะแนนรายหัวข้อ เนื่องจากรายการประเมินเดิมไม่มีข้อมูลคะแนนแยกรายข้อ</p>';
+   }else{inner='<div class="v64-empty">ยังไม่มีคะแนนสำหรับแสดงกราฟในช่วงที่เลือก</div>';}
+  }
   else{inner='<div class="v63-pie-grid">';for(const [question,v] of per){
    const pct=v.sum/(v.n*5)*100,ok=pct>95,color=ok?'#15976a':'#dc6659';
    inner+=`<div class="v63-pie-card"><strong>${reportEsc(question)}</strong><div class="v63-pie" style="background:conic-gradient(${color} ${pct}%,#e9edf2 ${pct}% 100%)"><span>${v63Fmt(pct)}</span></div><p class="v63-note">${ok?'✓ ผ่าน':'⚠ ไม่ผ่าน'} · ${v.n} คำตอบ · KPI &gt;95%</p></div>`;
